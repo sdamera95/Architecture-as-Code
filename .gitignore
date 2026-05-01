@@ -158,6 +158,7 @@ secrets.yml
 # CATIA Magic binary project files (large; use Git LFS or share separately)
 # =============================================================================
 *.mdszip
+*.zip
 
 # =============================================================================
 # Sysand environment and build output (reconstructible from lockfile / source)
