@@ -1,0 +1,733 @@
+{
+  "metadata": {
+    "model_name": "AutonomousGroundRobot",
+    "extracted_from": [
+      "syside-demos/showcase_agr.sysml"
+    ],
+    "extraction_timestamp": "2026-04-17T10:10:19.553788+00:00",
+    "library_version": "0.1.0-alpha"
+  },
+  "nodes": [
+    {
+      "name": "lidar",
+      "type_name": "LidarDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "lidar"
+    },
+    {
+      "name": "imu",
+      "type_name": "ImuDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/imu/data",
+          "msg_type": "sensor_msgs.msg.Imu",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "imu"
+    },
+    {
+      "name": "camera",
+      "type_name": "CameraDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/camera/image",
+          "msg_type": "sensor_msgs.msg.Image",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "camera"
+    },
+    {
+      "name": "obstacle_detector",
+      "type_name": "ObstacleDetector",
+      "namespace": "/perception",
+      "lifecycle": true,
+      "archetype": "PerceptionPipeline",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "processedPub",
+          "topic_name": "/detections",
+          "msg_type": "sensor_msgs.msg.PointCloud2",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "rawSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        },
+        {
+          "port_name": "cameraSub",
+          "topic_name": "/camera/image",
+          "msg_type": "sensor_msgs.msg.Image",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "obstacleDetector"
+    },
+    {
+      "name": "ekf_localizer",
+      "type_name": "EKFLocalizer",
+      "namespace": "/estimation",
+      "lifecycle": true,
+      "archetype": "Estimator",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "posePub",
+          "topic_name": "/odom_filtered",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "sensorSub",
+          "topic_name": "/imu/data",
+          "msg_type": "sensor_msgs.msg.Imu",
+          "qos_preset": null
+        },
+        {
+          "port_name": "scanSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "max_iterations",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Integer",
+          "default": null
+        }
+      ],
+      "instance_name": "ekfLocalizer"
+    },
+    {
+      "name": "path_planner",
+      "type_name": "PathPlanner",
+      "namespace": "/planning",
+      "lifecycle": true,
+      "archetype": "Planner",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "planPub",
+          "topic_name": "/plan",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "mapSub",
+          "topic_name": "/map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": "best_available"
+        },
+        {
+          "port_name": "detectionsSub",
+          "topic_name": "/detections",
+          "msg_type": "sensor_msgs.msg.PointCloud2",
+          "qos_preset": "default"
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "planAction",
+          "action_name": "compute_path",
+          "goal_type": null,
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "planner_algorithm",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::StringType",
+          "default": null
+        }
+      ],
+      "instance_name": "pathPlanner"
+    },
+    {
+      "name": "trajectory_tracker",
+      "type_name": "TrajectoryTracker",
+      "namespace": "/control",
+      "lifecycle": true,
+      "archetype": "Controller",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "commandPub",
+          "topic_name": "/cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "stateSub",
+          "topic_name": "/odom_filtered",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": "default"
+        },
+        {
+          "port_name": "planSub",
+          "topic_name": "/plan",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": "default"
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "controlAction",
+          "action_name": "follow_trajectory",
+          "goal_type": null,
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "max_linear_velocity",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        },
+        {
+          "name": "max_angular_velocity",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        }
+      ],
+      "instance_name": "trajectoryTracker"
+    },
+    {
+      "name": "velocity_smoother",
+      "type_name": "VelocitySmoother",
+      "namespace": "/safety",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "/cmd_vel_smooth",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "system_default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "/cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "default"
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "smoothing_frequency",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        }
+      ],
+      "instance_name": "velocitySmoother"
+    },
+    {
+      "name": "collision_guard",
+      "type_name": "CollisionGuard",
+      "namespace": "/safety",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "/cmd_vel_out",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "/cmd_vel_smooth",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "system_default"
+        },
+        {
+          "port_name": "scanSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "min_obstacle_distance",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        }
+      ],
+      "instance_name": "collisionGuard"
+    },
+    {
+      "name": "map_server",
+      "type_name": "StaticMapServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "MapProvider",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "mapPub",
+          "topic_name": "/map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": "best_available"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [
+        {
+          "port_name": "mapService",
+          "service_name": "get_map",
+          "request_type": null,
+          "response_type": null
+        }
+      ],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "mapServer"
+    },
+    {
+      "name": "mission_coordinator",
+      "type_name": "MissionCoordinator",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "BehaviorCoordinator",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "statusPub",
+          "topic_name": "/mission_status",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "goalAction",
+          "action_name": "execute_mission",
+          "goal_type": null,
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "missionCoordinator"
+    }
+  ],
+  "connections": [
+    {
+      "name": "scanToDetector",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "obstacleDetector",
+            "rawSub"
+          ],
+          "path": "obstacleDetector.rawSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "obstacleDetector.rawSub"
+    },
+    {
+      "name": "cameraToDetector",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "camera",
+            "sensorPub"
+          ],
+          "path": "camera.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "obstacleDetector",
+            "cameraSub"
+          ],
+          "path": "obstacleDetector.cameraSub"
+        }
+      ],
+      "source": "camera.sensorPub",
+      "target": "obstacleDetector.cameraSub"
+    },
+    {
+      "name": "imuToEkf",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "imu",
+            "sensorPub"
+          ],
+          "path": "imu.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "ekfLocalizer",
+            "sensorSub"
+          ],
+          "path": "ekfLocalizer.sensorSub"
+        }
+      ],
+      "source": "imu.sensorPub",
+      "target": "ekfLocalizer.sensorSub"
+    },
+    {
+      "name": "scanToEkf",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "ekfLocalizer",
+            "scanSub"
+          ],
+          "path": "ekfLocalizer.scanSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "ekfLocalizer.scanSub"
+    },
+    {
+      "name": "detectionsToPlanner",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "obstacleDetector",
+            "processedPub"
+          ],
+          "path": "obstacleDetector.processedPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "pathPlanner",
+            "detectionsSub"
+          ],
+          "path": "pathPlanner.detectionsSub"
+        }
+      ],
+      "source": "obstacleDetector.processedPub",
+      "target": "pathPlanner.detectionsSub"
+    },
+    {
+      "name": "mapToPlanner",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "pathPlanner",
+            "mapSub"
+          ],
+          "path": "pathPlanner.mapSub"
+        }
+      ],
+      "source": "mapServer.mapPub",
+      "target": "pathPlanner.mapSub"
+    },
+    {
+      "name": "planToTracker",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "pathPlanner",
+            "planPub"
+          ],
+          "path": "pathPlanner.planPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "trajectoryTracker",
+            "planSub"
+          ],
+          "path": "trajectoryTracker.planSub"
+        }
+      ],
+      "source": "pathPlanner.planPub",
+      "target": "trajectoryTracker.planSub"
+    },
+    {
+      "name": "odomToTracker",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "ekfLocalizer",
+            "posePub"
+          ],
+          "path": "ekfLocalizer.posePub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "trajectoryTracker",
+            "stateSub"
+          ],
+          "path": "trajectoryTracker.stateSub"
+        }
+      ],
+      "source": "ekfLocalizer.posePub",
+      "target": "trajectoryTracker.stateSub"
+    },
+    {
+      "name": "cmdVelToSmoother",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "trajectoryTracker",
+            "commandPub"
+          ],
+          "path": "trajectoryTracker.commandPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "velocitySmoother",
+            "cmdVelIn"
+          ],
+          "path": "velocitySmoother.cmdVelIn"
+        }
+      ],
+      "source": "trajectoryTracker.commandPub",
+      "target": "velocitySmoother.cmdVelIn"
+    },
+    {
+      "name": "smootherToGuard",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "velocitySmoother",
+            "cmdVelOut"
+          ],
+          "path": "velocitySmoother.cmdVelOut"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "collisionGuard",
+            "cmdVelIn"
+          ],
+          "path": "collisionGuard.cmdVelIn"
+        }
+      ],
+      "source": "velocitySmoother.cmdVelOut",
+      "target": "collisionGuard.cmdVelIn"
+    },
+    {
+      "name": "scanToGuard",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "collisionGuard",
+            "scanSub"
+          ],
+          "path": "collisionGuard.scanSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "collisionGuard.scanSub"
+    }
+  ],
+  "tf_frames": [
+    {
+      "name": "frames.mapFrame",
+      "frame_id": "map",
+      "type_name": "MapFrame"
+    },
+    {
+      "name": "frames.odomFrame",
+      "frame_id": "odom",
+      "type_name": "OdomFrame"
+    },
+    {
+      "name": "frames.baseLinkFrame",
+      "frame_id": "base_link",
+      "type_name": "BaseLinkFrame"
+    },
+    {
+      "name": "lidarFrame",
+      "frame_id": "lidar_link",
+      "type_name": "CoordinateFrame"
+    },
+    {
+      "name": "imuFrame",
+      "frame_id": "imu_link",
+      "type_name": "CoordinateFrame"
+    },
+    {
+      "name": "cameraFrame",
+      "frame_id": "camera_link",
+      "type_name": "CoordinateFrame"
+    }
+  ],
+  "tf_transforms": [
+    {
+      "name": "mapToOdom",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "odomToBaseLink",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "lidarMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    },
+    {
+      "name": "imuMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    },
+    {
+      "name": "cameraMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    }
+  ]
+}

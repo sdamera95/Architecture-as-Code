@@ -1,0 +1,697 @@
+{
+  "metadata": {
+    "model_name": "TestRobot",
+    "extracted_from": [
+      "tests/consumer_test_robot.sysml"
+    ],
+    "extraction_timestamp": "2026-04-17T12:14:18.816513+00:00",
+    "library_version": "0.1.0-alpha"
+  },
+  "nodes": [
+    {
+      "name": "lidar_driver",
+      "type_name": "MyLidarDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "lidar"
+    },
+    {
+      "name": "PlannerServer",
+      "type_name": "PlannerServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Planner",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "planPub",
+          "topic_name": "plan",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "planAction",
+          "action_name": "compute_path_to_pose",
+          "goal_type": "nav2_msgs.action.ComputePathToPose.Goal",
+          "feedback_type": null,
+          "result_type": "nav2_msgs.action.ComputePathToPose.Result"
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.planner"
+    },
+    {
+      "name": "ControllerServer",
+      "type_name": "ControllerServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Controller",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "commandPub",
+          "topic_name": "cmd_vel",
+          "msg_type": "geometry_msgs.msg.TwistStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "stateSub",
+          "topic_name": "odom",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": null
+        },
+        {
+          "port_name": "speedLimitSub",
+          "topic_name": "speed_limit",
+          "msg_type": "nav2_msgs.msg.SpeedLimit",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "controlAction",
+          "action_name": "follow_path",
+          "goal_type": "nav2_msgs.action.FollowPath.Goal",
+          "feedback_type": "nav2_msgs.action.FollowPath.Feedback",
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.controller"
+    },
+    {
+      "name": "BtNavigator",
+      "type_name": "BtNavigator",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "BehaviorCoordinator",
+      "is_standard": true,
+      "publishers": [],
+      "subscribers": [
+        {
+          "port_name": "goalPoseSub",
+          "topic_name": "goal_pose",
+          "msg_type": "geometry_msgs.msg.PoseStamped",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "goalAction",
+          "action_name": "navigate_to_pose",
+          "goal_type": "nav2_msgs.action.NavigateToPose.Goal",
+          "feedback_type": "nav2_msgs.action.NavigateToPose.Feedback",
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.btNavigator"
+    },
+    {
+      "name": "BehaviorServer",
+      "type_name": "BehaviorServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "cmdVelPub",
+          "topic_name": "cmd_vel",
+          "msg_type": "geometry_msgs.msg.TwistStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "spinAction",
+          "action_name": "spin",
+          "goal_type": "nav2_msgs.action.Spin.Goal",
+          "feedback_type": null,
+          "result_type": null
+        },
+        {
+          "port_name": "backupAction",
+          "action_name": "backup",
+          "goal_type": "nav2_msgs.action.BackUp.Goal",
+          "feedback_type": null,
+          "result_type": null
+        },
+        {
+          "port_name": "waitAction",
+          "action_name": "wait",
+          "goal_type": "nav2_msgs.action.Wait.Goal",
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.behaviors"
+    },
+    {
+      "name": "SmootherServer",
+      "type_name": "SmootherServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Planner",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "planPub",
+          "topic_name": "plan_smoothed",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "planAction",
+          "action_name": "smooth_path",
+          "goal_type": "nav2_msgs.action.SmoothPath.Goal",
+          "feedback_type": null,
+          "result_type": "nav2_msgs.action.SmoothPath.Result"
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.smoother"
+    },
+    {
+      "name": "Costmap2DROS",
+      "type_name": "Costmap2DROS",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "costmapPub",
+          "topic_name": "costmap",
+          "msg_type": "nav2_msgs.msg.Costmap",
+          "qos_preset": null
+        },
+        {
+          "port_name": "footprintPub",
+          "topic_name": "published_footprint",
+          "msg_type": "geometry_msgs.msg.PolygonStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "mapSub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.globalCostmap"
+    },
+    {
+      "name": "Costmap2DROS",
+      "type_name": "Costmap2DROS",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "costmapPub",
+          "topic_name": "costmap",
+          "msg_type": "nav2_msgs.msg.Costmap",
+          "qos_preset": null
+        },
+        {
+          "port_name": "footprintPub",
+          "topic_name": "published_footprint",
+          "msg_type": "geometry_msgs.msg.PolygonStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "mapSub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.localCostmap"
+    },
+    {
+      "name": "AmclNode",
+      "type_name": "AmclNode",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Estimator",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "posePub",
+          "topic_name": "amcl_pose",
+          "msg_type": "geometry_msgs.msg.PoseWithCovarianceStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "sensorSub",
+          "topic_name": "scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": null
+        },
+        {
+          "port_name": "mapSub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.amcl"
+    },
+    {
+      "name": "Nav2MapServer",
+      "type_name": "Nav2MapServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "MapProvider",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "mapPub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": "best_available"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [
+        {
+          "port_name": "mapService",
+          "service_name": "map",
+          "request_type": null,
+          "response_type": null
+        },
+        {
+          "port_name": "loadMapService",
+          "service_name": "load_map",
+          "request_type": null,
+          "response_type": null
+        }
+      ],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.mapServer"
+    },
+    {
+      "name": "Nav2VelocitySmoother",
+      "type_name": "Nav2VelocitySmoother",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "cmd_vel_smoothed",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.velocitySmoother"
+    },
+    {
+      "name": "Nav2CollisionMonitor",
+      "type_name": "Nav2CollisionMonitor",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "cmd_vel_out",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "cmd_vel_smoothed",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.collisionMonitor"
+    },
+    {
+      "name": "Nav2LifecycleManager",
+      "type_name": "Nav2LifecycleManager",
+      "namespace": "/",
+      "lifecycle": false,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.lifecycleManager"
+    },
+    {
+      "name": "my_controller",
+      "type_name": "MyController",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Controller",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "commandPub",
+          "topic_name": "/cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "stateSub",
+          "topic_name": "/odom",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "controlAction",
+          "action_name": "follow_path",
+          "goal_type": "nav2_msgs.action.FollowPath.Goal",
+          "feedback_type": "nav2_msgs.action.FollowPath.Feedback",
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "max_velocity",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        }
+      ],
+      "instance_name": "controller"
+    }
+  ],
+  "connections": [
+    {
+      "name": "velToSmoother",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "controller",
+            "commandPub"
+          ],
+          "path": "controller.commandPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "velocitySmoother",
+            "cmdVelIn"
+          ],
+          "path": "velocitySmoother.cmdVelIn"
+        }
+      ],
+      "source": "controller.commandPub",
+      "target": "velocitySmoother.cmdVelIn"
+    },
+    {
+      "name": "smootherToMonitor",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "velocitySmoother",
+            "cmdVelOut"
+          ],
+          "path": "velocitySmoother.cmdVelOut"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "collisionMonitor",
+            "cmdVelIn"
+          ],
+          "path": "collisionMonitor.cmdVelIn"
+        }
+      ],
+      "source": "velocitySmoother.cmdVelOut",
+      "target": "collisionMonitor.cmdVelIn"
+    },
+    {
+      "name": "mapToAmcl",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "amcl",
+            "mapSub"
+          ],
+          "path": "amcl.mapSub"
+        }
+      ],
+      "source": "mapServer.mapPub",
+      "target": "amcl.mapSub"
+    },
+    {
+      "name": "mapToGlobalCostmap",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "globalCostmap",
+            "mapSub"
+          ],
+          "path": "globalCostmap.mapSub"
+        }
+      ],
+      "source": "mapServer.mapPub",
+      "target": "globalCostmap.mapSub"
+    },
+    {
+      "name": "mapToLocalCostmap",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "localCostmap",
+            "mapSub"
+          ],
+          "path": "localCostmap.mapSub"
+        }
+      ],
+      "source": "mapServer.mapPub",
+      "target": "localCostmap.mapSub"
+    },
+    {
+      "name": "lidarToLocalCostmap",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "nav",
+            "localCostmap",
+            "mapSub"
+          ],
+          "path": "nav.localCostmap.mapSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "nav.localCostmap.mapSub"
+    }
+  ],
+  "tf_frames": [
+    {
+      "name": "nav.frames.mapFrame",
+      "frame_id": "map",
+      "type_name": "MapFrame"
+    },
+    {
+      "name": "nav.frames.odomFrame",
+      "frame_id": "odom",
+      "type_name": "OdomFrame"
+    },
+    {
+      "name": "nav.frames.baseLinkFrame",
+      "frame_id": "base_link",
+      "type_name": "BaseLinkFrame"
+    },
+    {
+      "name": "frames.mapFrame",
+      "frame_id": "map",
+      "type_name": "MapFrame"
+    },
+    {
+      "name": "frames.odomFrame",
+      "frame_id": "odom",
+      "type_name": "OdomFrame"
+    },
+    {
+      "name": "frames.baseLinkFrame",
+      "frame_id": "base_link",
+      "type_name": "BaseLinkFrame"
+    },
+    {
+      "name": "lidarFrame",
+      "frame_id": "lidar_link",
+      "type_name": "CoordinateFrame"
+    }
+  ],
+  "tf_transforms": [
+    {
+      "name": "mapToOdom",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "odomToBaseLink",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "mapToOdom",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "odomToBaseLink",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "lidarMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    }
+  ]
+}

@@ -1,0 +1,903 @@
+{
+  "metadata": {
+    "model_name": "GroundRobotWithNav2",
+    "extracted_from": [
+      "syside-demos/showcase_agr_nav2.sysml"
+    ],
+    "extraction_timestamp": "2026-04-11T04:59:01.510417+00:00",
+    "library_version": "0.1.0-alpha"
+  },
+  "nodes": [
+    {
+      "name": "lidar",
+      "type_name": "Nav2LidarDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "lidar"
+    },
+    {
+      "name": "depth_camera",
+      "type_name": "DepthCameraDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/depth/image",
+          "msg_type": "sensor_msgs.msg.Image",
+          "qos_preset": "sensor_data"
+        },
+        {
+          "port_name": "cameraInfoPub",
+          "topic_name": "/depth/camera_info",
+          "msg_type": "sensor_msgs.msg.CameraInfo",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "depthCamera"
+    },
+    {
+      "name": "imu",
+      "type_name": "Nav2ImuDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/imu/data",
+          "msg_type": "sensor_msgs.msg.Imu",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "imu"
+    },
+    {
+      "name": "pointcloud_filter",
+      "type_name": "PointCloudFilter",
+      "namespace": "/perception",
+      "lifecycle": true,
+      "archetype": "PerceptionPipeline",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "processedPub",
+          "topic_name": "/filtered_cloud",
+          "msg_type": "sensor_msgs.msg.PointCloud2",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "rawSub",
+          "topic_name": "/depth/image",
+          "msg_type": "sensor_msgs.msg.Image",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "voxel_size",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        }
+      ],
+      "instance_name": "pointcloudFilter"
+    },
+    {
+      "name": "ekf_localizer",
+      "type_name": "Nav2EKFLocalizer",
+      "namespace": "/estimation",
+      "lifecycle": true,
+      "archetype": "Estimator",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "posePub",
+          "topic_name": "/odom",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": null
+        },
+        {
+          "port_name": "poseCovPub",
+          "topic_name": "/amcl_pose",
+          "msg_type": "geometry_msgs.msg.PoseWithCovarianceStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "sensorSub",
+          "topic_name": "/imu/data",
+          "msg_type": "sensor_msgs.msg.Imu",
+          "qos_preset": null
+        },
+        {
+          "port_name": "scanSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "ekfLocalizer"
+    },
+    {
+      "name": "PlannerServer",
+      "type_name": "PlannerServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Planner",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "planPub",
+          "topic_name": "plan",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "planAction",
+          "action_name": "compute_path_to_pose",
+          "goal_type": "nav2_msgs.action.ComputePathToPose.Goal",
+          "feedback_type": null,
+          "result_type": "nav2_msgs.action.ComputePathToPose.Result"
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.planner"
+    },
+    {
+      "name": "ControllerServer",
+      "type_name": "ControllerServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Controller",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "commandPub",
+          "topic_name": "cmd_vel",
+          "msg_type": "geometry_msgs.msg.TwistStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "stateSub",
+          "topic_name": "odom",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": null
+        },
+        {
+          "port_name": "speedLimitSub",
+          "topic_name": "speed_limit",
+          "msg_type": "nav2_msgs.msg.SpeedLimit",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "controlAction",
+          "action_name": "follow_path",
+          "goal_type": "nav2_msgs.action.FollowPath.Goal",
+          "feedback_type": "nav2_msgs.action.FollowPath.Feedback",
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.controller"
+    },
+    {
+      "name": "BtNavigator",
+      "type_name": "BtNavigator",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "BehaviorCoordinator",
+      "is_standard": true,
+      "publishers": [],
+      "subscribers": [
+        {
+          "port_name": "goalPoseSub",
+          "topic_name": "goal_pose",
+          "msg_type": "geometry_msgs.msg.PoseStamped",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "goalAction",
+          "action_name": "navigate_to_pose",
+          "goal_type": "nav2_msgs.action.NavigateToPose.Goal",
+          "feedback_type": "nav2_msgs.action.NavigateToPose.Feedback",
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.btNavigator"
+    },
+    {
+      "name": "BehaviorServer",
+      "type_name": "BehaviorServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "cmdVelPub",
+          "topic_name": "cmd_vel",
+          "msg_type": "geometry_msgs.msg.TwistStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "spinAction",
+          "action_name": "spin",
+          "goal_type": "nav2_msgs.action.Spin.Goal",
+          "feedback_type": null,
+          "result_type": null
+        },
+        {
+          "port_name": "backupAction",
+          "action_name": "backup",
+          "goal_type": "nav2_msgs.action.BackUp.Goal",
+          "feedback_type": null,
+          "result_type": null
+        },
+        {
+          "port_name": "waitAction",
+          "action_name": "wait",
+          "goal_type": "nav2_msgs.action.Wait.Goal",
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.behaviors"
+    },
+    {
+      "name": "SmootherServer",
+      "type_name": "SmootherServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Planner",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "planPub",
+          "topic_name": "plan_smoothed",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "planAction",
+          "action_name": "smooth_path",
+          "goal_type": "nav2_msgs.action.SmoothPath.Goal",
+          "feedback_type": null,
+          "result_type": "nav2_msgs.action.SmoothPath.Result"
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.smoother"
+    },
+    {
+      "name": "Costmap2DROS",
+      "type_name": "Costmap2DROS",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "costmapPub",
+          "topic_name": "costmap",
+          "msg_type": "nav2_msgs.msg.Costmap",
+          "qos_preset": null
+        },
+        {
+          "port_name": "footprintPub",
+          "topic_name": "published_footprint",
+          "msg_type": "geometry_msgs.msg.PolygonStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "mapSub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.globalCostmap"
+    },
+    {
+      "name": "Costmap2DROS",
+      "type_name": "Costmap2DROS",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "costmapPub",
+          "topic_name": "costmap",
+          "msg_type": "nav2_msgs.msg.Costmap",
+          "qos_preset": null
+        },
+        {
+          "port_name": "footprintPub",
+          "topic_name": "published_footprint",
+          "msg_type": "geometry_msgs.msg.PolygonStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "mapSub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.localCostmap"
+    },
+    {
+      "name": "AmclNode",
+      "type_name": "AmclNode",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "Estimator",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "posePub",
+          "topic_name": "amcl_pose",
+          "msg_type": "geometry_msgs.msg.PoseWithCovarianceStamped",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "sensorSub",
+          "topic_name": "scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": null
+        },
+        {
+          "port_name": "mapSub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.amcl"
+    },
+    {
+      "name": "Nav2MapServer",
+      "type_name": "Nav2MapServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "MapProvider",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "mapPub",
+          "topic_name": "map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [
+        {
+          "port_name": "mapService",
+          "service_name": "map",
+          "request_type": null,
+          "response_type": null
+        },
+        {
+          "port_name": "loadMapService",
+          "service_name": "load_map",
+          "request_type": null,
+          "response_type": null
+        }
+      ],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.mapServer"
+    },
+    {
+      "name": "Nav2VelocitySmoother",
+      "type_name": "Nav2VelocitySmoother",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "cmd_vel_smoothed",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.velocitySmoother"
+    },
+    {
+      "name": "Nav2CollisionMonitor",
+      "type_name": "Nav2CollisionMonitor",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": true,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "cmd_vel_out",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "cmd_vel_smoothed",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.collisionMonitor"
+    },
+    {
+      "name": "Nav2LifecycleManager",
+      "type_name": "Nav2LifecycleManager",
+      "namespace": "/",
+      "lifecycle": false,
+      "archetype": null,
+      "is_standard": true,
+      "publishers": [],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "nav.lifecycleManager"
+    }
+  ],
+  "connections": [
+    {
+      "name": "velToSmoother",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "controller",
+            "commandPub"
+          ],
+          "path": "controller.commandPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "velocitySmoother",
+            "cmdVelIn"
+          ],
+          "path": "velocitySmoother.cmdVelIn"
+        }
+      ],
+      "source": "controller.commandPub",
+      "target": "velocitySmoother.cmdVelIn"
+    },
+    {
+      "name": "smootherToMonitor",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "velocitySmoother",
+            "cmdVelOut"
+          ],
+          "path": "velocitySmoother.cmdVelOut"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "collisionMonitor",
+            "cmdVelIn"
+          ],
+          "path": "collisionMonitor.cmdVelIn"
+        }
+      ],
+      "source": "velocitySmoother.cmdVelOut",
+      "target": "collisionMonitor.cmdVelIn"
+    },
+    {
+      "name": "mapToAmcl",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "amcl",
+            "mapSub"
+          ],
+          "path": "amcl.mapSub"
+        }
+      ],
+      "source": "mapServer.mapPub",
+      "target": "amcl.mapSub"
+    },
+    {
+      "name": "mapToGlobalCostmap",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "globalCostmap",
+            "mapSub"
+          ],
+          "path": "globalCostmap.mapSub"
+        }
+      ],
+      "source": "mapServer.mapPub",
+      "target": "globalCostmap.mapSub"
+    },
+    {
+      "name": "depthToFilter",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "depthCamera",
+            "sensorPub"
+          ],
+          "path": "depthCamera.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "pointcloudFilter",
+            "rawSub"
+          ],
+          "path": "pointcloudFilter.rawSub"
+        }
+      ],
+      "source": "depthCamera.sensorPub",
+      "target": "pointcloudFilter.rawSub"
+    },
+    {
+      "name": "imuToEkf",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "imu",
+            "sensorPub"
+          ],
+          "path": "imu.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "ekfLocalizer",
+            "sensorSub"
+          ],
+          "path": "ekfLocalizer.sensorSub"
+        }
+      ],
+      "source": "imu.sensorPub",
+      "target": "ekfLocalizer.sensorSub"
+    },
+    {
+      "name": "scanToEkf",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "ekfLocalizer",
+            "scanSub"
+          ],
+          "path": "ekfLocalizer.scanSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "ekfLocalizer.scanSub"
+    },
+    {
+      "name": "scanToLocalCostmap",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "nav",
+            "localCostmap",
+            "mapSub"
+          ],
+          "path": "nav.localCostmap.mapSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "nav.localCostmap.mapSub"
+    },
+    {
+      "name": "scanToGlobalCostmap",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "lidar",
+            "sensorPub"
+          ],
+          "path": "lidar.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "nav",
+            "globalCostmap",
+            "mapSub"
+          ],
+          "path": "nav.globalCostmap.mapSub"
+        }
+      ],
+      "source": "lidar.sensorPub",
+      "target": "nav.globalCostmap.mapSub"
+    },
+    {
+      "name": "odomToController",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "ekfLocalizer",
+            "posePub"
+          ],
+          "path": "ekfLocalizer.posePub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "nav",
+            "controller",
+            "stateSub"
+          ],
+          "path": "nav.controller.stateSub"
+        }
+      ],
+      "source": "ekfLocalizer.posePub",
+      "target": "nav.controller.stateSub"
+    }
+  ],
+  "tf_frames": [
+    {
+      "name": "nav.frames.mapFrame",
+      "frame_id": "map",
+      "type_name": "MapFrame"
+    },
+    {
+      "name": "nav.frames.odomFrame",
+      "frame_id": "odom",
+      "type_name": "OdomFrame"
+    },
+    {
+      "name": "nav.frames.baseLinkFrame",
+      "frame_id": "base_link",
+      "type_name": "BaseLinkFrame"
+    },
+    {
+      "name": "frames.mapFrame",
+      "frame_id": "map",
+      "type_name": "MapFrame"
+    },
+    {
+      "name": "frames.odomFrame",
+      "frame_id": "odom",
+      "type_name": "OdomFrame"
+    },
+    {
+      "name": "frames.baseLinkFrame",
+      "frame_id": "base_link",
+      "type_name": "BaseLinkFrame"
+    },
+    {
+      "name": "lidarFrame",
+      "frame_id": "lidar_link",
+      "type_name": "CoordinateFrame"
+    },
+    {
+      "name": "depthCameraFrame",
+      "frame_id": "depth_camera_link",
+      "type_name": "CoordinateFrame"
+    },
+    {
+      "name": "imuFrame",
+      "frame_id": "imu_link",
+      "type_name": "CoordinateFrame"
+    }
+  ],
+  "tf_transforms": [
+    {
+      "name": "mapToOdom",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "odomToBaseLink",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "mapToOdom",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "odomToBaseLink",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "lidarMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    },
+    {
+      "name": "depthCameraMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    },
+    {
+      "name": "imuMount",
+      "parent_frame": "frames.baseLinkFrame",
+      "child_frame": "child",
+      "is_static": true
+    }
+  ]
+}
