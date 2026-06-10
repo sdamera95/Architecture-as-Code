@@ -4,7 +4,7 @@
     "extracted_from": [
       "syside-demos/showcase_agr.sysml"
     ],
-    "extraction_timestamp": "2026-04-17T10:10:19.553788+00:00",
+    "extraction_timestamp": "2026-06-03T23:40:20.602993+00:00",
     "library_version": "0.1.0-alpha"
   },
   "nodes": [
@@ -729,5 +729,6 @@
       "child_frame": "child",
       "is_static": true
     }
-  ]
+  ],
+  "requirements": []
 }

@@ -37,19 +37,19 @@ package ros2_sysmlv2_action_msgs {
                Maps to action_msgs/msg/GoalInfo.
                goalId is a UUID (16 bytes) represented as a String. */
         attribute goalId : String;
-        attribute stamp : Time;
+        item stamp : Time;
     }
 
     item def GoalStatus {
         doc /* Current lifecycle status of an action goal.
                Maps to action_msgs/msg/GoalStatus. */
-        attribute goalInfo : GoalInfo;
+        item goalInfo : GoalInfo;
         attribute status : GoalStatusKind;
     }
 
     item def GoalStatusArray {
         doc /* Array of goal statuses, published by action servers.
                Maps to action_msgs/msg/GoalStatusArray. */
-        attribute statusList : GoalStatus[0..*];
+        item statusList : GoalStatus[0..*];
     }
 }

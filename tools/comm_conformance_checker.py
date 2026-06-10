@@ -183,7 +183,8 @@ def extract_sysml_comm_layer(sysml_files: list[str]) -> dict:
     """Load SysML v2 files and extract comm layer definitions."""
     import syside
 
-    model, diag = syside.load_model(sysml_files)
+    # Strict mode (project discipline; see § 7.7 OMG spec + Stage A audit).
+    model, diag = syside.load_model(sysml_files, warnings_as_errors=True)
     if diag.contains_errors():
         print("ERROR: SysML model has parse errors:")
         for d in diag.diagnostics:

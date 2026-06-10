@@ -53,7 +53,10 @@ print("=" * 60)
 
 section("1. Parse all files")
 
-model, diagnostics = syside.load_model(FILES)
+# Surface warnings as errors. Silent warning absorption hid a long-standing
+# spec violation (attribute-usage-features inherited check; see § 7.7 OMG spec).
+# This discipline is permanent — the validator must act as an honest guide.
+model, diagnostics = syside.load_model(FILES, warnings_as_errors=True)
 has_errors = diagnostics.contains_errors()
 check("All files parse without errors", not has_errors)
 check(f"File count is 17", len(FILES) == 17, f"got {len(FILES)}")
@@ -350,23 +353,25 @@ section("10. Cross-file import verification")
 # Verify by checking that nav2 items reference types from foundation
 all_items = {n.name: n for n in model.nodes(syside.ItemDefinition)}
 
-# ComputePathToPoseGoal references PoseStamped (geometry_msgs) and Duration (foundation)
+# ComputePathToPoseGoal references PoseStamped (geometry_msgs) and Duration (foundation).
+# After the Syside 0.9.0 `attribute-usage-features` fix, fields whose RHS is an
+# `item def` are declared as `item ...` (composite), not `attribute ...`. Look at both.
 if "ComputePathToPoseResult" in all_items:
-    attrs = [e.name for e in all_items["ComputePathToPoseResult"].owned_elements.collect()
-             if e.try_cast(syside.AttributeUsage)]
+    fields = [e.name for e in all_items["ComputePathToPoseResult"].owned_elements.collect()
+              if e.try_cast(syside.AttributeUsage) or e.try_cast(syside.ItemUsage)]
     check("Nav2 ComputePathToPoseResult has planningTime (Duration from foundation)",
-          "planningTime" in attrs)
+          "planningTime" in fields)
     check("Nav2 ComputePathToPoseResult has path (Path from nav_msgs)",
-          "path" in attrs)
+          "path" in fields)
 
 # Marker references types from 4 different packages
 if "Marker" in all_items:
-    attrs = [e.name for e in all_items["Marker"].owned_elements.collect()
-             if e.try_cast(syside.AttributeUsage)]
-    check("Marker has header (from foundation)", "header" in attrs)
-    check("Marker has pose (from geometry_msgs)", "pose" in attrs)
-    check("Marker has color (from std_msgs)", "color" in attrs)
-    check("Marker has texture (from sensor_msgs)", "texture" in attrs)
+    fields = [e.name for e in all_items["Marker"].owned_elements.collect()
+              if e.try_cast(syside.AttributeUsage) or e.try_cast(syside.ItemUsage)]
+    check("Marker has header (from foundation)", "header" in fields)
+    check("Marker has pose (from geometry_msgs)", "pose" in fields)
+    check("Marker has color (from std_msgs)", "color" in fields)
+    check("Marker has texture (from sensor_msgs)", "texture" in fields)
 
 print(f"  Cross-file references verified across 7 layers")
 

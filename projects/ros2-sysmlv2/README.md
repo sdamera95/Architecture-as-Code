@@ -4,6 +4,12 @@ The first SysML v2 domain library for ROS2 robotics system architectures.
 
 **179 definitions** across **17 source files** covering message types, communication patterns, lifecycle, deployment, TF2, parameters, node archetypes, and the Nav2 navigation stack.
 
+## What this library is — and is not
+
+This library is the **type vocabulary** for modeling ROS2 systems in SysML v2. You import it from your own `.sysml` models to obtain typed handles on messages, topics, services, actions, nodes, lifecycle states, QoS profiles, TF frames, and parameters that map directly to ROS2 Jazzy semantics. Every definition is validated against actual ROS2 source.
+
+This library is **not** a code generator. The companion [Architecture-as-Code](https://github.com/sdamera95/Architecture-as-Code) project provides the bridge pipeline that reads models written against this vocabulary and generates buildable ROS2 packages (lifecycle node skeletons, launch files, parameter YAML, and an auto-generated conformance monitor). If you want runnable code from your SysML model, you want the parent project; if you want the type vocabulary alone, you want this kpar.
+
 ## Installation
 
 ```bash
@@ -77,9 +83,15 @@ All definitions are validated against actual ROS2 Jazzy source code:
 
 ## Requirements
 
-- [Sysand](https://docs.sysand.org/) >= 0.0.10
-- [Syside Editor](https://docs.sensmetry.com/editor/) (free) for authoring
-- [Syside Automator](https://docs.sensmetry.com/automator/) (paid) for programmatic access
+- [Sysand](https://docs.sysand.org/) ≥ `0.0.11`
+- [Syside Editor](https://docs.sensmetry.com/editor/) ≥ `0.9.0` (free) for authoring with this library
+- [Syside Automator](https://docs.sensmetry.com/automator/) ≥ `0.9.0` (paid) for programmatic model access
+- Target runtime: **ROS2 Jazzy** (ground truth source for all conformance checks)
+
+## Related
+
+- Parent project: [Architecture-as-Code](https://github.com/sdamera95/Architecture-as-Code) — bridge pipeline that turns SysML v2 models written against this vocabulary into buildable ROS2 packages
+- Documentation: see `implementation_log.md` in this directory for the per-phase build history (`Phases 0–9` covered foundation through Nav2)
 
 ## License
 

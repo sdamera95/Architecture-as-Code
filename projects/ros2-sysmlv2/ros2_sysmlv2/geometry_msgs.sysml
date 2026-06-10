@@ -71,43 +71,43 @@ package ros2_sysmlv2_geometry_msgs {
     item def Pose {
         doc /* Position and orientation in free space.
                Maps to geometry_msgs/msg/Pose. */
-        attribute position : Point;
-        attribute orientation : Quaternion;
+        item position : Point;
+        item orientation : Quaternion;
     }
 
     item def Twist {
         doc /* Velocity in free space: linear and angular components.
                Maps to geometry_msgs/msg/Twist. */
-        attribute linear : Vector3;
-        attribute angular : Vector3;
+        item linear : Vector3;
+        item angular : Vector3;
     }
 
     item def Accel {
         doc /* Acceleration in free space: linear and angular components.
                Maps to geometry_msgs/msg/Accel. */
-        attribute linear : Vector3;
-        attribute angular : Vector3;
+        item linear : Vector3;
+        item angular : Vector3;
     }
 
     item def Wrench {
         doc /* Force and torque in free space.
                Maps to geometry_msgs/msg/Wrench. */
-        attribute force : Vector3;
-        attribute torque : Vector3;
+        item force : Vector3;
+        item torque : Vector3;
     }
 
     item def Transform {
         doc /* Geometric transform: translation and rotation.
                Maps to geometry_msgs/msg/Transform. */
-        attribute translation : Vector3;
-        attribute rotation : Quaternion;
+        item translation : Vector3;
+        item rotation : Quaternion;
     }
 
     item def Inertia {
         doc /* Mass and inertia tensor.
                Maps to geometry_msgs/msg/Inertia. */
         attribute m : Real;
-        attribute com : Vector3;
+        item com : Vector3;
         attribute ixx : Real;
         attribute ixy : Real;
         attribute ixz : Real;
@@ -122,68 +122,68 @@ package ros2_sysmlv2_geometry_msgs {
 
     item def PointStamped {
         doc /* Timestamped Point. Maps to geometry_msgs/msg/PointStamped. */
-        attribute header : Header;
-        attribute point : Point;
+        item header : Header;
+        item point : Point;
     }
 
     item def PoseStamped {
         doc /* Timestamped Pose. Maps to geometry_msgs/msg/PoseStamped. */
-        attribute header : Header;
-        attribute pose : Pose;
+        item header : Header;
+        item pose : Pose;
     }
 
     item def TwistStamped {
         doc /* Timestamped Twist. Maps to geometry_msgs/msg/TwistStamped. */
-        attribute header : Header;
-        attribute twist : Twist;
+        item header : Header;
+        item twist : Twist;
     }
 
     item def AccelStamped {
         doc /* Timestamped Accel. Maps to geometry_msgs/msg/AccelStamped. */
-        attribute header : Header;
-        attribute accel : Accel;
+        item header : Header;
+        item accel : Accel;
     }
 
     item def WrenchStamped {
         doc /* Timestamped Wrench. Maps to geometry_msgs/msg/WrenchStamped. */
-        attribute header : Header;
-        attribute wrench : Wrench;
+        item header : Header;
+        item wrench : Wrench;
     }
 
     item def QuaternionStamped {
         doc /* Timestamped Quaternion. Maps to geometry_msgs/msg/QuaternionStamped. */
-        attribute header : Header;
-        attribute quaternion : Quaternion;
+        item header : Header;
+        item quaternion : Quaternion;
     }
 
     item def Vector3Stamped {
         doc /* Timestamped Vector3. Maps to geometry_msgs/msg/Vector3Stamped. */
-        attribute header : Header;
-        attribute vector : Vector3;
+        item header : Header;
+        item vector : Vector3;
     }
 
     item def InertiaStamped {
         doc /* Timestamped Inertia. Maps to geometry_msgs/msg/InertiaStamped. */
-        attribute header : Header;
-        attribute inertia : Inertia;
+        item header : Header;
+        item inertia : Inertia;
     }
 
     item def TransformStamped {
         doc /* Timestamped Transform with parent and child frame IDs.
                Maps to geometry_msgs/msg/TransformStamped.
                Published on /tf and /tf_static topics. */
-        attribute header : Header;
+        item header : Header;
         attribute childFrameId : String;
-        attribute transform : Transform;
+        item transform : Transform;
     }
 
     item def VelocityStamped {
         doc /* Stamped velocity with reference frame context.
                Maps to geometry_msgs/msg/VelocityStamped. */
-        attribute header : Header;
+        item header : Header;
         attribute bodyFrameId : String;
         attribute referenceFrameId : String;
-        attribute velocity : Twist;
+        item velocity : Twist;
     }
 
     // ===============================================================
@@ -193,21 +193,21 @@ package ros2_sysmlv2_geometry_msgs {
     item def PoseWithCovariance {
         doc /* Pose with 6x6 covariance matrix (36 elements, row-major).
                Maps to geometry_msgs/msg/PoseWithCovariance. */
-        attribute pose : Pose;
+        item pose : Pose;
         attribute covariance : CovarianceMatrix6x6;
     }
 
     item def TwistWithCovariance {
         doc /* Twist with 6x6 covariance matrix.
                Maps to geometry_msgs/msg/TwistWithCovariance. */
-        attribute twist : Twist;
+        item twist : Twist;
         attribute covariance : CovarianceMatrix6x6;
     }
 
     item def AccelWithCovariance {
         doc /* Accel with 6x6 covariance matrix.
                Maps to geometry_msgs/msg/AccelWithCovariance. */
-        attribute accel : Accel;
+        item accel : Accel;
         attribute covariance : CovarianceMatrix6x6;
     }
 
@@ -218,22 +218,22 @@ package ros2_sysmlv2_geometry_msgs {
     item def PoseWithCovarianceStamped {
         doc /* Timestamped PoseWithCovariance.
                Maps to geometry_msgs/msg/PoseWithCovarianceStamped. */
-        attribute header : Header;
-        attribute pose : PoseWithCovariance;
+        item header : Header;
+        item pose : PoseWithCovariance;
     }
 
     item def TwistWithCovarianceStamped {
         doc /* Timestamped TwistWithCovariance.
                Maps to geometry_msgs/msg/TwistWithCovarianceStamped. */
-        attribute header : Header;
-        attribute twist : TwistWithCovariance;
+        item header : Header;
+        item twist : TwistWithCovariance;
     }
 
     item def AccelWithCovarianceStamped {
         doc /* Timestamped AccelWithCovariance.
                Maps to geometry_msgs/msg/AccelWithCovarianceStamped. */
-        attribute header : Header;
-        attribute accel : AccelWithCovariance;
+        item header : Header;
+        item accel : AccelWithCovariance;
     }
 
     // ===============================================================
@@ -243,33 +243,33 @@ package ros2_sysmlv2_geometry_msgs {
     item def Polygon {
         doc /* Ordered list of Point32 forming a polygon.
                Maps to geometry_msgs/msg/Polygon. */
-        attribute points : Point32[0..*];
+        item points : Point32[0..*];
     }
 
     item def PolygonStamped {
         doc /* Timestamped Polygon. Maps to geometry_msgs/msg/PolygonStamped. */
-        attribute header : Header;
-        attribute polygon : Polygon;
+        item header : Header;
+        item polygon : Polygon;
     }
 
     item def PolygonInstance {
         doc /* Polygon with an instance ID.
                Maps to geometry_msgs/msg/PolygonInstance. */
-        attribute polygon : Polygon;
+        item polygon : Polygon;
         attribute id : Integer;
     }
 
     item def PolygonInstanceStamped {
         doc /* Timestamped PolygonInstance.
                Maps to geometry_msgs/msg/PolygonInstanceStamped. */
-        attribute header : Header;
-        attribute polygon : PolygonInstance;
+        item header : Header;
+        item polygon : PolygonInstance;
     }
 
     item def PoseArray {
         doc /* Array of poses. Used for particle clouds, path candidates.
                Maps to geometry_msgs/msg/PoseArray. */
-        attribute header : Header;
-        attribute poses : Pose[0..*];
+        item header : Header;
+        item poses : Pose[0..*];
     }
 }

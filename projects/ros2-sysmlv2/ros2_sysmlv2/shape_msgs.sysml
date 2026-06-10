@@ -23,8 +23,8 @@ package ros2_sysmlv2_shape_msgs {
     item def Mesh {
         doc /* A triangle mesh defined by vertices and triangle indices.
                Maps to shape_msgs/msg/Mesh. */
-        attribute triangles : MeshTriangle[0..*];
-        attribute vertices : Point[0..*];
+        item triangles : MeshTriangle[0..*];
+        item vertices : Point[0..*];
     }
 
     // ===============================================================
@@ -45,6 +45,6 @@ package ros2_sysmlv2_shape_msgs {
                holds shape-specific parameters. */
         attribute primitiveType : Integer;
         attribute dimensions : Real[0..*];
-        attribute polygon : Polygon;
+        item polygon : Polygon;
     }
 }

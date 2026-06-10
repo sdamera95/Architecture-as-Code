@@ -517,6 +517,18 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
         frames=frames,
     ))
 
+    # ── Generate requirements report (Tier 1 design-time evaluation, Syside 0.9.0) ──
+    requirements = arch.get("requirements", [])
+    if requirements:
+        from datetime import datetime, timezone
+        req_tmpl = env.get_template("requirements_report.md.j2")
+        req_report = output / "requirements_report.md"
+        req_report.write_text(req_tmpl.render(
+            system_name=system_name,
+            requirements=requirements,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        ))
+
     # ── Generate activate_nodes script ──
     activator_tmpl = env.get_template("activate_nodes.py.j2")
     lifecycle_nodes_for_activator = []

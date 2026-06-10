@@ -44,7 +44,7 @@ print("=" * 60)
 print("Phase 8 Validation: 5 remaining message packages")
 print("=" * 60)
 
-model, diagnostics = syside.load_model(FILES)
+model, diagnostics = syside.load_model(FILES, warnings_as_errors=True)
 has_errors = diagnostics.contains_errors()
 check("All 17 files parse without errors", not has_errors)
 
@@ -95,8 +95,10 @@ all_item_defs = {n.name: n for n in model.nodes(syside.ItemDefinition)}
 def count_attrs(item_name):
     if item_name not in all_item_defs:
         return -1
+    # After Syside 0.9.0 attribute-usage-features (OMG § 7.7), fields with composite
+    # (item def) RHS are declared `item`, not `attribute`. Count both kinds.
     return len([e for e in all_item_defs[item_name].owned_elements.collect()
-                if e.try_cast(syside.AttributeUsage)])
+                if e.try_cast(syside.AttributeUsage) or e.try_cast(syside.ItemUsage)])
 
 check("JointTrajectoryPoint has 5 attrs", count_attrs("JointTrajectoryPoint") == 5,
       f"got {count_attrs('JointTrajectoryPoint')}")

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:reqif-xhtml="http://www.w3.org/1999/xhtml">
+  <THE-HEADER>
+    <REQ-IF-HEADER IDENTIFIER="header-stage-e">
+      <COMMENT>Synthetic ReqIF for Stage E API smoke test. Hand-authored per OMG ReqIF 1.0 schema.</COMMENT>
+      <CREATION-TIME>2026-05-14T08:00:00Z</CREATION-TIME>
+      <REQ-IF-TOOL-ID>Architecture-as-Code</REQ-IF-TOOL-ID>
+      <REQ-IF-VERSION>1.0</REQ-IF-VERSION>
+      <SOURCE-TOOL-ID>hand-authored</SOURCE-TOOL-ID>
+      <TITLE>Stage E sample</TITLE>
+    </REQ-IF-HEADER>
+  </THE-HEADER>
+  <CORE-CONTENT>
+    <REQ-IF-CONTENT>
+      <DATATYPES>
+        <DATATYPE-DEFINITION-STRING IDENTIFIER="dt-string" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="String" MAX-LENGTH="1000"/>
+        <DATATYPE-DEFINITION-XHTML IDENTIFIER="dt-xhtml" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="XHTML"/>
+      </DATATYPES>
+      <SPEC-TYPES>
+        <SPEC-OBJECT-TYPE IDENTIFIER="spec-type-req" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="Requirement">
+          <SPEC-ATTRIBUTES>
+            <ATTRIBUTE-DEFINITION-STRING IDENTIFIER="attr-id" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="ReqID">
+              <TYPE><DATATYPE-DEFINITION-STRING-REF>dt-string</DATATYPE-DEFINITION-STRING-REF></TYPE>
+            </ATTRIBUTE-DEFINITION-STRING>
+            <ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="attr-text" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="Text">
+              <TYPE><DATATYPE-DEFINITION-XHTML-REF>dt-xhtml</DATATYPE-DEFINITION-XHTML-REF></TYPE>
+            </ATTRIBUTE-DEFINITION-XHTML>
+          </SPEC-ATTRIBUTES>
+        </SPEC-OBJECT-TYPE>
+        <SPECIFICATION-TYPE IDENTIFIER="spec-type-doc" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="Specification"/>
+      </SPEC-TYPES>
+      <SPEC-OBJECTS>
+        <SPEC-OBJECT IDENTIFIER="req-mass" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="MassBudget">
+          <VALUES>
+            <ATTRIBUTE-VALUE-STRING THE-VALUE="REQ-001">
+              <DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>attr-id</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>
+            </ATTRIBUTE-VALUE-STRING>
+            <ATTRIBUTE-VALUE-XHTML>
+              <DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>attr-text</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>
+              <THE-VALUE><reqif-xhtml:div>The UAV total mass shall not exceed 5 kg.</reqif-xhtml:div></THE-VALUE>
+            </ATTRIBUTE-VALUE-XHTML>
+          </VALUES>
+          <TYPE><SPEC-OBJECT-TYPE-REF>spec-type-req</SPEC-OBJECT-TYPE-REF></TYPE>
+        </SPEC-OBJECT>
+        <SPEC-OBJECT IDENTIFIER="req-endurance" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="EnduranceRequirement">
+          <VALUES>
+            <ATTRIBUTE-VALUE-STRING THE-VALUE="REQ-002">
+              <DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>attr-id</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>
+            </ATTRIBUTE-VALUE-STRING>
+            <ATTRIBUTE-VALUE-XHTML>
+              <DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>attr-text</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>
+              <THE-VALUE><reqif-xhtml:div>The UAV shall sustain flight for at least 30 minutes.</reqif-xhtml:div></THE-VALUE>
+            </ATTRIBUTE-VALUE-XHTML>
+          </VALUES>
+          <TYPE><SPEC-OBJECT-TYPE-REF>spec-type-req</SPEC-OBJECT-TYPE-REF></TYPE>
+        </SPEC-OBJECT>
+        <SPEC-OBJECT IDENTIFIER="req-power" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="PowerBudget">
+          <VALUES>
+            <ATTRIBUTE-VALUE-STRING THE-VALUE="REQ-003">
+              <DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>attr-id</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>
+            </ATTRIBUTE-VALUE-STRING>
+            <ATTRIBUTE-VALUE-XHTML>
+              <DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>attr-text</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>
+              <THE-VALUE><reqif-xhtml:div>Total system power draw shall not exceed battery discharge capacity.</reqif-xhtml:div></THE-VALUE>
+            </ATTRIBUTE-VALUE-XHTML>
+          </VALUES>
+          <TYPE><SPEC-OBJECT-TYPE-REF>spec-type-req</SPEC-OBJECT-TYPE-REF></TYPE>
+        </SPEC-OBJECT>
+      </SPEC-OBJECTS>
+      <SPEC-RELATIONS>
+      </SPEC-RELATIONS>
+      <SPECIFICATIONS>
+        <SPECIFICATION IDENTIFIER="spec-uav" LAST-CHANGE="2026-05-14T08:00:00Z" LONG-NAME="UAV Trade Study">
+          <TYPE><SPECIFICATION-TYPE-REF>spec-type-doc</SPECIFICATION-TYPE-REF></TYPE>
+          <CHILDREN>
+            <SPEC-HIERARCHY IDENTIFIER="hier-mass" LAST-CHANGE="2026-05-14T08:00:00Z">
+              <OBJECT><SPEC-OBJECT-REF>req-mass</SPEC-OBJECT-REF></OBJECT>
+            </SPEC-HIERARCHY>
+            <SPEC-HIERARCHY IDENTIFIER="hier-endurance" LAST-CHANGE="2026-05-14T08:00:00Z">
+              <OBJECT><SPEC-OBJECT-REF>req-endurance</SPEC-OBJECT-REF></OBJECT>
+            </SPEC-HIERARCHY>
+            <SPEC-HIERARCHY IDENTIFIER="hier-power" LAST-CHANGE="2026-05-14T08:00:00Z">
+              <OBJECT><SPEC-OBJECT-REF>req-power</SPEC-OBJECT-REF></OBJECT>
+            </SPEC-HIERARCHY>
+          </CHILDREN>
+        </SPECIFICATION>
+      </SPECIFICATIONS>
+      <SPEC-RELATION-GROUPS>
+      </SPEC-RELATION-GROUPS>
+    </REQ-IF-CONTENT>
+  </CORE-CONTENT>
+</REQ-IF>

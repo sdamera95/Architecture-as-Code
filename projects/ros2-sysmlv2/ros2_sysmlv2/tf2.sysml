@@ -66,7 +66,7 @@ package ros2_sysmlv2_tf2 {
 
         end parent : CoordinateFrame;
         end child : CoordinateFrame;
-        attribute transform : TransformStamped;
+        item transform : TransformStamped;
     }
 
     connection def DynamicTransform {

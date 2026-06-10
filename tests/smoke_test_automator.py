@@ -37,7 +37,7 @@ def check(description: str, condition: bool):
 
 def main():
     section("1. Load Model")
-    model, diagnostics = syside.load_model([str(MODEL_PATH)])
+    model, diagnostics = syside.load_model([str(MODEL_PATH)], warnings_as_errors=True)
 
     has_errors = diagnostics.contains_errors()
     check(f"Model loaded from {MODEL_PATH.name}", not has_errors)

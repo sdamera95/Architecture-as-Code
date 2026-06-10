@@ -33,7 +33,7 @@ MODEL_PATH = Path(__file__).parent.parent / "syside-demos" / "uav_trade_study.sy
 
 def load_model(path: str):
     """Load the SysML v2 model and return the model object."""
-    model, diag = syside.load_model([str(path)])
+    model, diag = syside.load_model([str(path)], warnings_as_errors=True)
     if diag.contains_errors():
         raise RuntimeError(f"SysML model has parse errors")
     return model

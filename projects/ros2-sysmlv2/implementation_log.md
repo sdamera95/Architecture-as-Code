@@ -201,11 +201,13 @@ automated conformance checking against the actual ROS2 Jazzy source code.
 
 2. **Variable-length arrays**: `attribute ranges : Real[0..*];` — validated working in Syside 0.8.7. Used for LaserScan.ranges, JointState.position, PointCloud2.data, etc.
 
-3. **Fixed-length arrays**: `attribute values : Real[36];` — validated working. Used for covariance matrices, camera calibration matrices.
+3. **Fixed-length arrays**: `attribute values : Real[36];` — validated working. Used for covariance matrices, camera calibration matrices. *(2026-06-03: realized — the library now uses `Real[N]` for all fixed-size matrix fields, see note below.)*
 
 4. **Message constants modeled as integers**: Constants like `Range.ULTRASOUND=0` are kept as integer fields in the item def (matching `.msg` exactly). Full `enum def` modeling deferred — the conformance checker accepts integer fields for constant-typed fields.
 
-5. **Covariance fields**: Use `CovarianceMatrix6x6` from foundation for 6x6 matrices (PoseWithCovariance, etc.). The 3x3 covariance matrices in Imu (9 elements) use plain `Real` to avoid needing a separate matrix type.
+5. **Covariance fields**: Use `CovarianceMatrix6x6` from foundation for 6x6 matrices (PoseWithCovariance, etc.). ~~The 3x3 covariance matrices in Imu (9 elements) use plain `Real` to avoid needing a separate matrix type.~~ **Superseded 2026-06-03 (see note below): all fixed-size matrix fields now carry IDL-faithful array cardinality.** The 3x3 covariances in Imu/NavSatFix/MagneticField and the camera matrices in CameraInfo use `Real[9]`/`Real[12]`, not scalar `Real`.
+
+   > **Note (2026-06-03): fixed-size matrix fields use `Real[N]`.** The library now models every ROS2 fixed-size matrix message field with its IDL array cardinality: covariances as `Real[9]` (3x3) / `Real[36]` (6x6, via `CovarianceMatrix6x6`), camera matrices as `Real[9]` (`k`, `r`) / `Real[12]` (`p`). This realizes the original intent in decision 3 above and retires the line-208 scalar-3x3 simplification. Rationale (not re-derived here): [docs/knowledge_docs/covariance_modeling_decision.md](../../docs/knowledge_docs/covariance_modeling_decision.md). In brief: the SysML→ROS2 bridge maps message *type names* and never reads field internals, and the JAX/Equinox analysis twin defines its own state-space covariances rather than consuming message-field shapes, so the message library should stay a faithful, lightweight projection of the ROS2 IDL. Scalar `Real` was lossy; `TensorQuantityValue` over-modeled an IDL projection for a consumer that does not read it.
 
 6. **Cross-package imports**: Three-layer chain validated: `nav_msgs` → `geometry_msgs` → `foundation`. Each package declares `private import` of its dependencies.
 
@@ -2071,3 +2073,41 @@ behave identically.
 | `test18_crosspillar_view.sysml` | 3 views combining structure+behavior+req+V&V | All pillars render as side-by-side boxes; no cross-pillar edges |
 | `test19_topology_depth.sysml` | 5 views at depths 1,2,3,4 with ports+connections | depth=3 is the threshold for ports + visible wire edges |
 | `test20_output/` (no source file) | CLI element vs view comparison | Byte-identical outputs; commands interchangeable |
+
+## Covariance / Fixed-Matrix Field Cardinality: `Real[N]` Decision + Conformance-Checker Enforcement (2026-06-03 → 04)
+
+**Trigger.** The June 2026 knowledge-docs + library audits (`docs/SPECIFICATION_AUDIT_JUNE.md`) flagged that the library's fixed-size matrix message fields (covariances, camera-calibration matrices) were modeled as scalar `Real`, dropping the ROS2 IDL array cardinality (`float64[36]`/`[9]`/`[12]`). The April intent (Modeling-decisions item 3 above) had been `Real[36]`; an unprincipled, undocumented simplification had reduced them to scalar before the May-1 public release.
+
+**Decision: `Real[N]` (IDL-faithful).** Canonical reasoning: `docs/knowledge_docs/covariance_modeling_decision.md`; full narrative reference: `docs/CovarianceHandling.md`. Reached by asking what each single-source-of-truth route actually consumes from the one SysML model:
+- *Implementation* (`bridge/extract_architecture.py`) maps message **type names** → real ROS2 types and never reads field internals → indifferent to the field modeling.
+- *Analysis* (planned JAX/Equinox twin) defines its **own** state-space covariances as Equinox pytrees. A ROS2 message covariance (interface uncertainty) is a different entity from an estimator-state covariance (the twin's `P`), so analysis does **not** consume message-field shapes.
+- *Verification* enforces structure (the conformance checker, now cardinality-aware).
+Scalar `Real` rejected as lossy/unprincipled; `TensorQuantityValue` rejected (validator-clean, and its `num` IS the row-major flat array, but it over-models an IDL projection for a consumer that does not read it).
+
+**Library change-set (9 fields → `Real[N]`, verified against ROS2 Jazzy `.msg`):**
+
+| File | Field(s) | → |
+|---|---|---|
+| `foundation.sysml:59` | `CovarianceMatrix6x6.values` (PoseWithCovariance etc., `float64[36]`) | `Real[36]` |
+| `sensor_msgs.sysml:39/41/43` | Imu orientation / angularVelocity / linearAcceleration covariance (`float64[9]`) | `Real[9]` |
+| `sensor_msgs.sysml:113/114` | CameraInfo `k`, `r` (`float64[9]`) | `Real[9]` |
+| `sensor_msgs.sysml:115` | CameraInfo `p` (`float64[12]`) | `Real[12]` |
+| `sensor_msgs.sysml:182` | NavSatFix `positionCovariance` (`float64[9]`) | `Real[9]` |
+| `sensor_msgs.sysml:191` | MagneticField `magneticFieldCovariance` (`float64[9]`) | `Real[9]` |
+
+(6×6 covariances flow through the named `CovarianceMatrix6x6`; 3×3 are bare `Real[9]` — the named-vs-bare asymmetry is intentional and kept.)
+
+**Conformance-checker enforcement (the gate, 2026-06-04).** `tools/msg_conformance_checker.py` previously parsed `.msg` `array_size` but never asserted it (so scalar `Real` passed). Extended to: (1) extract each SysML field's multiplicity via the Syside `MultiplicityRange` API (`upper_bound` → `LiteralInteger` = fixed `[N]`; `LiteralInfinity` = `[0..*]`; `None` = scalar); (2) assert SysML multiplicity == `.msg` array size, new `CARDINALITY_MISMATCH` status; (3) **delegate** the primitive→wrapper case (`float64[36]` → `CovarianceMatrix6x6`: cardinality lives in the wrapper's `values: Real[36]`, so the field-level check is skipped). This catches scalar-vs-`float64[N]` even though `syside check` accepts scalar `Real` as valid SysML — closing a gap invisible to the validator.
+
+**Test:** `tests/test_msg_cardinality.py` — 27 checks (end-to-end over the 8 covariance-bearing types + unit tests proving the gate catches scalar-vs-`[N]`, wrong-N, scalar-vs-array, and delegates wrappers). Run: `uv run python tests/test_msg_cardinality.py`.
+
+**Verification (all run, not asserted from theory):**
+- `syside check` on the full library after the edits → exit 0, 0 diagnostics.
+- Smoke: regenerating `showcase_agr` (Imu + Odometry) still imports the real ROS2 types with 0 covariance/field references in generated node logic → the change is inert at codegen. (`colcon`/`ros2` absent locally; full build remains the separate-Jazzy-box step.)
+- Completeness: ROS2 `common_interfaces` has 13 fixed-size array declarations; the library now models all 13 (3×`float64[36]` → the one `CovarianceMatrix6x6`). No other scalar-modeled fixed-array gap remains.
+- Cardinality test: 27/27. Negative test (revert one field to scalar `Real`) → correctly flagged `CARDINALITY_MISMATCH`, checker exit 1.
+- Regression sweep over 8 modeled packages → 0 false-positive cardinality mismatches.
+
+**Orchestration / docs.** Decision-propagation + library edit + smoke + modeling review ran as a dynamic Workflow (resumed once after a VSCode restart). Docs corrected to the decision (replacing the superseded "keep scalar" text): `SPECIFICATION_AUDIT_JUNE.md`, `ROS2_SysMLv2_Library_Design.md`, `docs/knowledge_docs/ros2_mapping_reference.md`, `docs/knowledge_docs/INDEX.md`, and this log. Memory: `feedback-covariance-fields-real-n` (replaced the now-deleted, opposite-conclusion `feedback-message-cardinality-not-modeled`).
+
+**Open (optional, not done):** `SolidPrimitive.dimensions` (`float64[<=3]`) → `Real[0..3]`; row-major doc notes on the bare 3×3 covariance fields.

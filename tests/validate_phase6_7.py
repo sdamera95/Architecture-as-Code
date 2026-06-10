@@ -43,7 +43,7 @@ print("=" * 60)
 print("Phase 6+7 Validation: archetypes.sysml + nav2.sysml")
 print("=" * 60)
 
-model, diagnostics = syside.load_model(FILES)
+model, diagnostics = syside.load_model(FILES, warnings_as_errors=True)
 has_errors = diagnostics.contains_errors()
 check("All 12 files parse without errors", not has_errors)
 

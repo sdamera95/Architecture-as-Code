@@ -43,7 +43,7 @@ print("=" * 60)
 print("Phase 4 Validation: lifecycle.sysml + deployment.sysml")
 print("=" * 60)
 
-model, diagnostics = syside.load_model(FILES)
+model, diagnostics = syside.load_model(FILES, warnings_as_errors=True)
 has_errors = diagnostics.contains_errors()
 check("All 8 files parse without errors", not has_errors)
 

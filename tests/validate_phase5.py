@@ -45,7 +45,7 @@ print("=" * 60)
 print("Phase 5 Validation: params.sysml + tf2.sysml")
 print("=" * 60)
 
-model, diagnostics = syside.load_model(FILES)
+model, diagnostics = syside.load_model(FILES, warnings_as_errors=True)
 has_errors = diagnostics.contains_errors()
 check("All 10 files parse without errors", not has_errors)
 
@@ -165,13 +165,16 @@ conn_defs = {n.name: n for n in model.nodes(syside.ConnectionDefinition)}
 check("connection def StaticTransform exists", "StaticTransform" in conn_defs)
 check("connection def DynamicTransform exists", "DynamicTransform" in conn_defs)
 
-# Check StaticTransform has transform attribute
+# Check StaticTransform has transform field
+# Post Syside 0.9.0 attribute-usage-features (OMG § 7.7): `transform : Transform`
+# is now an `item` (composite, since Transform is an item def), not `attribute`.
 if "StaticTransform" in conn_defs:
     st_elems = []
     for elem in conn_defs["StaticTransform"].owned_elements.collect():
-        if au := elem.try_cast(syside.AttributeUsage):
-            st_elems.append(au.name)
-    check("  StaticTransform has transform attribute", "transform" in st_elems)
+        f = elem.try_cast(syside.AttributeUsage) or elem.try_cast(syside.ItemUsage)
+        if f is not None:
+            st_elems.append(f.name)
+    check("  StaticTransform has transform field", "transform" in st_elems)
 
 # ── TF2: StandardFrameTree ────────────────────────────────────────────
 

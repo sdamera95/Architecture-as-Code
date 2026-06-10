@@ -4,7 +4,7 @@
     "extracted_from": [
       "tests/consumer_test_robot.sysml"
     ],
-    "extraction_timestamp": "2026-04-17T12:14:18.816513+00:00",
+    "extraction_timestamp": "2026-05-14T08:18:50.588796+00:00",
     "library_version": "0.1.0-alpha"
   },
   "nodes": [
@@ -693,5 +693,6 @@
       "child_frame": "child",
       "is_static": true
     }
-  ]
+  ],
+  "requirements": []
 }

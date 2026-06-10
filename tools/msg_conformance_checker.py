@@ -185,15 +185,18 @@ class SysmlItemDef:
     name: str
     qualified_name: str
     attributes: dict[str, str] = field(default_factory=dict)  # name → type name
+    multiplicities: dict[str, str] = field(default_factory=dict)  # name → multiplicity descriptor ("scalar"/"[N]"/"[0..*]"/"[lo..hi]")
 
 
 def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
     """Load SysML v2 files and extract all item definitions with their attributes."""
     import syside
 
-    model, diag = syside.load_model(sysml_files)
+    # Surface warnings as errors per project discipline. See § 7.7 OMG spec
+    # and docs/v9-upgrade-path-log.md Stage A audit for rationale.
+    model, diag = syside.load_model(sysml_files, warnings_as_errors=True)
     if diag.contains_errors():
-        print("ERROR: SysML model has parse errors:")
+        print("ERROR: SysML model has parse errors or warnings:")
         for d in diag.diagnostics:
             print(f"  {d}")
         sys.exit(1)
@@ -206,15 +209,21 @@ def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
         )
 
         for owned in item_def.owned_elements.collect():
-            if attr := owned.try_cast(syside.AttributeUsage):
-                # Get the attribute's type name
-                types_list = list(attr.types.collect())
+            # After Syside 0.9.0 `attribute-usage-features`, fields with composite
+            # (item-def) RHS are declared as `item`, not `attribute`. Look at both.
+            field = owned.try_cast(syside.AttributeUsage) or owned.try_cast(syside.ItemUsage)
+            if field is not None:
+                types_list = list(field.types.collect())
                 type_name = types_list[0].name if types_list else "Unknown"
-                sysml_item.attributes[attr.name] = type_name
+                sysml_item.attributes[field.name] = type_name
+                sysml_item.multiplicities[field.name] = sysml_multiplicity_descriptor(field)
 
         items[item_def.name] = sysml_item
 
-    # Also check attribute definitions (Time, Duration are attr defs, not item defs)
+    # Also check attribute definitions (e.g., QoSProfile, CovarianceMatrix6x6, RMWConfig).
+    # As of the 2026-05-16 strict-fidelity fix, Time and Duration are item defs
+    # (mirroring builtin_interfaces/Time.msg and Duration.msg structured types);
+    # they appear in the loop above. See docs/7_GoverningRules.md for the rationale.
     for attr_def in model.nodes(syside.AttributeDefinition):
         sysml_item = SysmlItemDef(
             name=attr_def.name,
@@ -222,10 +231,12 @@ def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
         )
 
         for owned in attr_def.owned_elements.collect():
-            if attr := owned.try_cast(syside.AttributeUsage):
-                types_list = list(attr.types.collect())
+            field = owned.try_cast(syside.AttributeUsage) or owned.try_cast(syside.ItemUsage)
+            if field is not None:
+                types_list = list(field.types.collect())
                 type_name = types_list[0].name if types_list else "Unknown"
-                sysml_item.attributes[attr.name] = type_name
+                sysml_item.attributes[field.name] = type_name
+                sysml_item.multiplicities[field.name] = sysml_multiplicity_descriptor(field)
 
         items[attr_def.name] = sysml_item
 
@@ -242,7 +253,7 @@ class FieldCheck:
     field_name: str
     ros2_type: str
     expected_sysml_type: str
-    status: str  # "PASS", "MISSING", "TYPE_MISMATCH"
+    status: str  # "PASS", "MISSING", "TYPE_MISMATCH", "CARDINALITY_MISMATCH"
     actual_sysml_type: Optional[str] = None
     note: str = ""
 
@@ -305,63 +316,56 @@ def check_msg_against_sysml(
 
     sysml_item = sysml_items[sysml_name]
     sysml_attrs = dict(sysml_item.attributes)  # copy for tracking extras
+    sysml_mults = dict(sysml_item.multiplicities)
 
     for msg_field in parsed_msg.fields:
+        # Match the .msg field to a SysML attribute by snake_case, then camelCase.
+        matched_name = None
         if msg_field.name in sysml_attrs:
-            actual_type = sysml_attrs.pop(msg_field.name)
-            expected_type = msg_field.sysml_type
+            matched_name = msg_field.name
+        elif to_camel_case(msg_field.name) in sysml_attrs:
+            matched_name = to_camel_case(msg_field.name)
 
-            # Type check (flexible: allow SysML name variations)
-            if types_match(expected_type, actual_type):
-                result.field_checks.append(FieldCheck(
-                    field_name=msg_field.name,
-                    ros2_type=msg_field.ros2_type,
-                    expected_sysml_type=expected_type,
-                    actual_sysml_type=actual_type,
-                    status="PASS",
-                ))
-            else:
-                result.field_checks.append(FieldCheck(
-                    field_name=msg_field.name,
-                    ros2_type=msg_field.ros2_type,
-                    expected_sysml_type=expected_type,
-                    actual_sysml_type=actual_type,
-                    status="TYPE_MISMATCH",
-                    note=f"Expected '{expected_type}', got '{actual_type}'",
-                ))
-        else:
-            # Field name might differ (camelCase in SysML vs snake_case in .msg)
-            camel_name = to_camel_case(msg_field.name)
-            if camel_name in sysml_attrs:
-                actual_type = sysml_attrs.pop(camel_name)
-                expected_type = msg_field.sysml_type
+        if matched_name is None:
+            result.field_checks.append(FieldCheck(
+                field_name=msg_field.name,
+                ros2_type=msg_field.ros2_type,
+                expected_sysml_type=msg_field.sysml_type or "?",
+                status="MISSING",
+                note="Field not found in SysML item def (tried snake_case and camelCase)",
+            ))
+            continue
 
-                if types_match(expected_type, actual_type):
-                    result.field_checks.append(FieldCheck(
-                        field_name=msg_field.name,
-                        ros2_type=msg_field.ros2_type,
-                        expected_sysml_type=expected_type,
-                        actual_sysml_type=actual_type,
-                        status="PASS",
-                        note=f"Matched via camelCase: {camel_name}",
-                    ))
-                else:
-                    result.field_checks.append(FieldCheck(
-                        field_name=msg_field.name,
-                        ros2_type=msg_field.ros2_type,
-                        expected_sysml_type=expected_type,
-                        actual_sysml_type=actual_type,
-                        status="TYPE_MISMATCH",
-                        note=f"Matched via camelCase: {camel_name}, but type differs",
-                    ))
-            else:
-                result.field_checks.append(FieldCheck(
-                    field_name=msg_field.name,
-                    ros2_type=msg_field.ros2_type,
-                    expected_sysml_type=msg_field.sysml_type or "?",
-                    status="MISSING",
-                    note="Field not found in SysML item def (tried snake_case and camelCase)",
-                ))
+        actual_type = sysml_attrs.pop(matched_name)
+        actual_mult = sysml_mults.get(matched_name, "scalar")
+        expected_type = msg_field.sysml_type
+        via_camel = matched_name != msg_field.name
+        camel_note = f"matched via camelCase: {matched_name}" if via_camel else ""
+
+        # 1. Type check (flexible: allow SysML name variations)
+        if not types_match(expected_type, actual_type):
+            result.field_checks.append(FieldCheck(
+                field_name=msg_field.name,
+                ros2_type=msg_field.ros2_type,
+                expected_sysml_type=expected_type,
+                actual_sysml_type=actual_type,
+                status="TYPE_MISMATCH",
+                note=(f"{camel_note}, but type differs" if via_camel
+                      else f"Expected '{expected_type}', got '{actual_type}'"),
+            ))
+            continue
+
+        # 2. Cardinality check (array multiplicity must match the .msg array size)
+        card_ok, card_note = check_cardinality(msg_field, expected_type, actual_type, actual_mult)
+        result.field_checks.append(FieldCheck(
+            field_name=msg_field.name,
+            ros2_type=msg_field.ros2_type,
+            expected_sysml_type=expected_type,
+            actual_sysml_type=actual_type,
+            status="PASS" if card_ok else "CARDINALITY_MISMATCH",
+            note=("; ".join(n for n in (camel_note, card_note) if n)
+                  if not card_ok else camel_note),
+        ))
 
     # Any remaining SysML attributes are "extra" (not in .msg)
     result.extra_sysml_attrs = list(sysml_attrs.keys())
@@ -389,6 +393,64 @@ def types_match(expected: str, actual: str) -> bool:
         return True
 
     return (expected, actual) in equivalences or (actual, expected) in equivalences
+
+
+# Primitive SysML/KerML value types. A ROS2 primitive array (float64[N]) must map to
+# one of these WITH the [N] multiplicity. When a ROS2 primitive array maps instead to a
+# named wrapper type (e.g. float64[36] → CovarianceMatrix6x6), the array cardinality is
+# carried inside the wrapper (CovarianceMatrix6x6.values: Real[36]), so the field-level
+# cardinality check is delegated/skipped. See docs/knowledge_docs/covariance_modeling_decision.md.
+PRIMITIVE_SYSML_TYPES = {"Real", "Integer", "Boolean", "String", "Natural", "Rational", "Complex"}
+
+
+def sysml_multiplicity_descriptor(field) -> str:
+    """Normalize a SysML feature's multiplicity to a comparable string via the Syside API.
+
+    "scalar" (no multiplicity, or [1]/[1..1]), "[N]" (fixed size N), "[0..*]" (variable),
+    or "[lo..hi]" (bounded). MultiplicityRange.upper_bound is a LiteralInfinity for
+    unbounded arrays and a LiteralInteger for fixed/bounded ones.
+    """
+    m = getattr(field, "multiplicity", None)
+    if m is None:
+        return "scalar"
+    upper = getattr(m, "upper_bound", None)
+    lower = getattr(m, "lower_bound", None)
+    if upper is None or type(upper).__name__ == "LiteralInfinity":
+        return "[0..*]"
+    up_v = getattr(upper, "value", None)
+    lo_v = getattr(lower, "value", None) if lower is not None else None
+    if up_v is None:
+        return "scalar"  # unreadable bound — treat as unconstrained rather than false-flag
+    if lo_v is None or lo_v == up_v:
+        return "scalar" if up_v == 1 else f"[{up_v}]"  # [N] shorthand is exactly N; [1] == scalar
+    return f"[{lo_v}..{up_v}]"
+
+
+def ros2_cardinality_descriptor(mf: MsgField) -> str:
+    """The SysML multiplicity a ROS2 field requires: 'scalar', '[N]' (fixed), or '[0..*]' (variable)."""
+    if not mf.is_array:
+        return "scalar"
+    if mf.array_size is not None:
+        return f"[{mf.array_size}]"
+    return "[0..*]"
+
+
+def check_cardinality(mf: MsgField, expected_type: str, actual_type: str, sysml_mult: str):
+    """Return (ok, note). Compares ROS2 array cardinality to the SysML field multiplicity.
+
+    Always ok (delegated) when a ROS2 primitive array maps to a non-primitive SysML wrapper
+    type — the cardinality then lives inside that type. A ROS2 variable array ([]) also
+    accepts a SysML bounded range ([lo..hi]) as a stricter-but-valid model.
+    """
+    if expected_type in PRIMITIVE_SYSML_TYPES and actual_type not in PRIMITIVE_SYSML_TYPES:
+        return True, f"array cardinality delegated to wrapper type '{actual_type}'"
+    want = ros2_cardinality_descriptor(mf)
+    if want == sysml_mult:
+        return True, ""
+    if want == "[0..*]" and sysml_mult.startswith("[") and ".." in sysml_mult:
+        return True, ""
+    ros2_decl = mf.ros2_type + ("" if not mf.is_array else (f"[{mf.array_size}]" if mf.array_size is not None else "[]"))
+    return False, f"ROS2 '{ros2_decl}' requires SysML multiplicity {want}, got {sysml_mult}"
 
 
 def to_camel_case(snake_str: str) -> str:
@@ -424,7 +486,8 @@ def print_report(checks: list[MsgCheck], verbose: bool = False):
             for fc in check.field_checks:
                 if fc.status == "PASS" and not verbose:
                     continue
-                status_str = {"PASS": "  OK ", "MISSING": " MISS", "TYPE_MISMATCH": " TYPE"}[fc.status]
+                status_str = {"PASS": "  OK ", "MISSING": " MISS", "TYPE_MISMATCH": " TYPE",
+                              "CARDINALITY_MISMATCH": " CARD"}.get(fc.status, " ??? ")
                 print(f"        [{status_str}] {fc.field_name}: "
                       f"{fc.ros2_type} → {fc.expected_sysml_type}"
                       f"{f' (got {fc.actual_sysml_type})' if fc.actual_sysml_type and fc.status != 'PASS' else ''}"

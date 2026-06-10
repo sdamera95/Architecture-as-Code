@@ -35,3 +35,8 @@ dependencies = [
 Homepage = "https://github.com/sdamera95/Architecture-as-Code"
 Repository = "https://github.com/sdamera95/Architecture-as-Code"
 Issues = "https://github.com/sdamera95/Architecture-as-Code/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]

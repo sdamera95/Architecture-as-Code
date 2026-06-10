@@ -88,15 +88,26 @@ package ros2_sysmlv2_comm {
     attribute def QoSProfile {
         doc /* Quality of Service profile for a communication endpoint.
                Maps to rclpy.qos.QoSProfile / rmw_qos_profile_t.
-               All 9 fields from QoSProfile.__slots__. */
+               All 9 fields from QoSProfile.__slots__.
+
+               Modeling note: QoSProfile is `attribute def` (referential) because
+               it is used as `attribute qos : QoSProfile` inside port defs, and
+               OMG SysML v2.0 §7.12.2 requires non-port features of a port def
+               to be referential. By §7.6.1 + §7.7.2 this forces QoSProfile's
+               own nested features to also be referential. The rmw_time_t-typed
+               fields (lifespan, deadline, livelinessLeaseDuration) are therefore
+               declared as `ref item ... : Duration` — the `ref` keyword (§7.6.3)
+               makes the item usage referential, satisfying §7.6.1 while
+               preserving the structured Duration type from foundation.sysml.
+               See docs/7_GoverningRules.md for the full rule chain. */
         attribute history : HistoryKind;
         attribute depth : Integer;
         attribute reliability : ReliabilityKind;
         attribute durability : DurabilityKind;
-        attribute lifespan : Duration;
-        attribute deadline : Duration;
+        ref item lifespan : Duration;
+        ref item deadline : Duration;
         attribute liveliness : LivelinessKind;
-        attribute livelinessLeaseDuration : Duration;
+        ref item livelinessLeaseDuration : Duration;
         attribute avoidRosNamespaceConventions : Boolean;
     }
 

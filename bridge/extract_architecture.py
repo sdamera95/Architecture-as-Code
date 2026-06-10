@@ -89,9 +89,12 @@ def load_model(user_files: list[str], library_dir: str):
     all_files = lib_files + user_files
 
     print(f"Loading {len(all_files)} files ({len(lib_files)} library + {len(user_files)} user)...")
-    model, diag = syside.load_model(all_files)
+    # Surface warnings as errors. Silent warning absorption hid a long-standing
+    # spec violation (attribute-usage-features inherited check, see § 7.7 OMG spec).
+    # LLM knowledge of SysML v2 is unreliable; the validator must act as an honest guide.
+    model, diag = syside.load_model(all_files, warnings_as_errors=True)
     if diag.contains_errors():
-        print("ERROR: SysML model has parse errors. Check Syside Editor.", file=sys.stderr)
+        print("ERROR: SysML model has parse errors or warnings. Check Syside Editor.", file=sys.stderr)
         sys.exit(1)
 
     # Build lookup tables
@@ -136,6 +139,102 @@ def build_msg_type_map(model) -> dict:
             type_map[item_name] = f"{ros2_pkg}.msg.{item_name}"
 
     return type_map
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Tier 1 design-time requirement evaluation (Syside 0.9.0)
+# ══════════════════════════════════════════════════════════════════════
+
+def _extract_doc(elem) -> str | None:
+    """Extract the doc /* ... */ comment from an element, if any."""
+    for owned in elem.owned_elements.collect():
+        if hasattr(owned, "body") and getattr(owned, "is_doc", False):
+            body = owned.body
+            return body.strip() if body else None
+        # Fallback: try Documentation type
+        if owned.__class__.__name__ == "Documentation":
+            body = getattr(owned, "body", None)
+            return body.strip() if body else None
+    return None
+
+
+def extract_requirements(model) -> list[dict]:
+    """Evaluate every RequirementDefinition and RequirementUsage in the project tier.
+
+    Implementation note (Syside 0.9.0): `compiler.evaluate()` accepts
+    `Expression | CalculationUsage | ConstraintUsage` only, NOT `RequirementUsage`
+    or `RequirementDefinition` directly. So we drill into each requirement's owned
+    `ConstraintUsage` (the `require constraint { ... }` block) and evaluate that.
+    """
+    stdlib = syside.Environment.get_default().lib
+    compiler = syside.Compiler()
+    out: list[dict] = []
+
+    def _evaluate_constraints(parent, kind: str) -> None:
+        constraints = [
+            cu
+            for e in parent.owned_elements.collect()
+            if (cu := e.try_cast(syside.ConstraintUsage))
+        ]
+        passed: bool | None
+        fatal = False
+        if not constraints:
+            passed = None
+            constraint_count = 0
+        else:
+            results: list[bool] = []
+            for cu in constraints:
+                try:
+                    value, report = compiler.evaluate(
+                        cu, stdlib=stdlib, experimental_quantities=True
+                    )
+                    if getattr(report, "fatal", False):
+                        fatal = True
+                        results.append(False)
+                    elif isinstance(value, bool):
+                        results.append(value)
+                    else:
+                        passed = None
+                        break
+                except Exception as e:  # noqa: BLE001
+                    log.warning(
+                        f"evaluate() raised for {parent.qualified_name}: "
+                        f"{type(e).__name__}: {e}"
+                    )
+                    fatal = True
+                    results.append(False)
+            else:
+                # All constraints evaluated to bool; AND them together.
+                passed = all(results)
+            constraint_count = len(constraints)
+
+        out.append({
+            "name": parent.name,
+            "qualified_name": str(parent.qualified_name),
+            "kind": kind,
+            "doc": _extract_doc(parent),
+            "constraint_count": constraint_count,
+            "passed": passed,
+            "fatal": fatal,
+        })
+
+    # Project-tier requirement defs (blueprints — evaluate against subject defaults)
+    for rd in model.elements(syside.RequirementDefinition):
+        doc = getattr(rd, "document", None)
+        if doc is not None and getattr(doc, "document_tier", None) is not None:
+            if str(doc.document_tier) not in ("DocumentTier.Project", "Project"):
+                continue
+        _evaluate_constraints(rd, "definition")
+
+    # Project-tier requirement usages (bound to concrete subjects, per Syside 0.9.0)
+    for ru in model.elements(syside.RequirementUsage, include_subtypes=True):
+        doc = getattr(ru, "document", None)
+        if doc is not None and getattr(doc, "document_tier", None) is not None:
+            if str(doc.document_tier) not in ("DocumentTier.Project", "Project"):
+                continue
+        _evaluate_constraints(ru, "usage")
+
+    return out
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -497,6 +596,7 @@ def extract_architecture(user_files, system_name, library_dir, output_path):
     """Run the full extraction pipeline."""
     model, part_defs, port_defs, item_defs = load_model(user_files, library_dir)
     msg_type_map = build_msg_type_map(model)
+    requirements = extract_requirements(model)
 
     # Find the system part def
     if system_name not in part_defs:
@@ -537,6 +637,7 @@ def extract_architecture(user_files, system_name, library_dir, output_path):
         "connections": regular_connections,
         "tf_frames": tf_frames,
         "tf_transforms": tf_transforms,
+        "requirements": requirements,
     }
 
     # Write output
@@ -553,6 +654,10 @@ def extract_architecture(user_files, system_name, library_dir, output_path):
     print(f"  Connections: {len(regular_connections)}")
     print(f"  TF frames: {len(tf_frames)}")
     print(f"  TF transforms: {len(tf_transforms)}")
+    n_passed = sum(1 for r in requirements if r["passed"] is True)
+    n_failed = sum(1 for r in requirements if r["passed"] is False)
+    n_indet = sum(1 for r in requirements if r["passed"] is None)
+    print(f"  Requirements: {len(requirements)} total ({n_passed} OK, {n_failed} FAIL, {n_indet} ??)")
     print(f"  Output: {output}")
 
     return architecture

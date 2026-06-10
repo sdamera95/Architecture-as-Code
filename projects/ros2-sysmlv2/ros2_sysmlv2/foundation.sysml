@@ -17,16 +17,19 @@ package ros2_sysmlv2_foundation {
     // Maps to: builtin_interfaces/msg/Time, Duration
     // ===============================================================
 
-    attribute def Time {
+    item def Time {
         doc /* ROS2 timestamp. Maps to builtin_interfaces/msg/Time.
-               Two-integer representation: seconds + nanoseconds. */
+               Two-integer representation: seconds + nanoseconds.
+               Modeled as item def because builtin_interfaces/Time.msg is a
+               structured message type (OMG SysML v2.0 §7.10). */
         attribute sec : Integer;
         attribute nanosec : Integer;
     }
 
-    attribute def Duration {
+    item def Duration {
         doc /* ROS2 duration. Maps to builtin_interfaces/msg/Duration.
-               Same two-integer representation as Time. */
+               Same two-integer representation as Time.
+               Modeled as item def for the same reason as Time. */
         attribute sec : Integer;
         attribute nanosec : Integer;
     }
@@ -40,7 +43,7 @@ package ros2_sysmlv2_foundation {
         doc /* Standard metadata for higher-level stamped data types.
                Maps to std_msgs/msg/Header.
                Included in every Stamped message variant. */
-        attribute stamp : Time;
+        item stamp : Time;
         attribute frameId : String;
     }
 
@@ -53,7 +56,7 @@ package ros2_sysmlv2_foundation {
                Order: (x, y, z, rotation about x, rotation about y,
                rotation about z).
                Used by PoseWithCovariance, TwistWithCovariance, etc. */
-        attribute values : Real;
+        attribute values : Real[36];
     }
 
     // ===============================================================

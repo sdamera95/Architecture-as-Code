@@ -16,7 +16,7 @@ print(f"Syside version: {syside.__version__}")
 print("=" * 60)
 
 # Load the test file
-model, diagnostics = syside.load_model([TEST_FILE])
+model, diagnostics = syside.load_model([TEST_FILE], warnings_as_errors=True)
 
 # Check for parse errors
 has_errors = diagnostics.contains_errors()

@@ -39,12 +39,15 @@ print("=" * 60)
 
 # ── Parse ─────────────────────────────────────────────────────────────
 
-model, diagnostics = syside.load_model(ALL_FILES)
+# Surface warnings as errors. Silent warning absorption hid a long-standing
+# spec violation (attribute-usage-features inherited check; see § 7.7 OMG spec).
+# This discipline is permanent — the validator must act as an honest guide.
+model, diagnostics = syside.load_model(ALL_FILES, warnings_as_errors=True)
 has_errors = diagnostics.contains_errors()
-check("All files parse without errors (library + consumer)", not has_errors)
+check("All files parse without errors or warnings (library + consumer)", not has_errors)
 
 if has_errors:
-    print("\nCritical: parse errors. Consumer model cannot use the library.")
+    print("\nCritical: parse errors or warnings. Consumer model cannot use the library.")
     sys.exit(1)
 
 # ── Consumer definitions exist ────────────────────────────────────────

@@ -23,15 +23,15 @@ package ros2_sysmlv2_trajectory_msgs {
         attribute velocities : Real[0..*];
         attribute accelerations : Real[0..*];
         attribute effort : Real[0..*];
-        attribute timeFromStart : Duration;
+        item timeFromStart : Duration;
     }
 
     item def JointTrajectory {
         doc /* An ordered sequence of joint-space trajectory points.
                Maps to trajectory_msgs/msg/JointTrajectory. */
-        attribute header : Header;
+        item header : Header;
         attribute jointNames : String[0..*];
-        attribute points : JointTrajectoryPoint[0..*];
+        item points : JointTrajectoryPoint[0..*];
     }
 
     // ===============================================================
@@ -41,17 +41,17 @@ package ros2_sysmlv2_trajectory_msgs {
     item def MultiDOFJointTrajectoryPoint {
         doc /* A single point on a multi-DOF (Cartesian) trajectory.
                Maps to trajectory_msgs/msg/MultiDOFJointTrajectoryPoint. */
-        attribute transforms : Transform[0..*];
-        attribute velocities : Twist[0..*];
-        attribute accelerations : Twist[0..*];
-        attribute timeFromStart : Duration;
+        item transforms : Transform[0..*];
+        item velocities : Twist[0..*];
+        item accelerations : Twist[0..*];
+        item timeFromStart : Duration;
     }
 
     item def MultiDOFJointTrajectory {
         doc /* An ordered sequence of multi-DOF trajectory points.
                Maps to trajectory_msgs/msg/MultiDOFJointTrajectory. */
-        attribute header : Header;
+        item header : Header;
         attribute jointNames : String[0..*];
-        attribute points : MultiDOFJointTrajectoryPoint[0..*];
+        item points : MultiDOFJointTrajectoryPoint[0..*];
     }
 }

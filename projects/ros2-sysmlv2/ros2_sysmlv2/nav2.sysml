@@ -41,16 +41,16 @@ package ros2_sysmlv2_nav2 {
 
     item def ComputePathToPoseGoal {
         doc /* Maps to nav2_msgs/action/ComputePathToPose goal. */
-        attribute goal : PoseStamped;
-        attribute startPose : PoseStamped;
+        item goal : PoseStamped;
+        item startPose : PoseStamped;
         attribute plannerId : String;
         attribute useStart : Boolean;
     }
 
     item def ComputePathToPoseResult {
         doc /* Maps to nav2_msgs/action/ComputePathToPose result. */
-        attribute path : Path;
-        attribute planningTime : Duration;
+        item path : Path;
+        item planningTime : Duration;
         attribute errorCode : Integer;
         attribute errorMsg : String;
     }
@@ -59,7 +59,7 @@ package ros2_sysmlv2_nav2 {
 
     item def FollowPathGoal {
         doc /* Maps to nav2_msgs/action/FollowPath goal. */
-        attribute path : Path;
+        item path : Path;
         attribute controllerId : String;
         attribute goalCheckerId : String;
         attribute progressCheckerId : String;
@@ -75,15 +75,15 @@ package ros2_sysmlv2_nav2 {
 
     item def NavigateToPoseGoal {
         doc /* Maps to nav2_msgs/action/NavigateToPose goal. */
-        attribute pose : PoseStamped;
+        item pose : PoseStamped;
         attribute behaviorTree : String;
     }
 
     item def NavigateToPoseFeedback {
         doc /* Maps to nav2_msgs/action/NavigateToPose feedback. */
-        attribute currentPose : PoseStamped;
-        attribute navigationTime : Duration;
-        attribute estimatedTimeRemaining : Duration;
+        item currentPose : PoseStamped;
+        item navigationTime : Duration;
+        item estimatedTimeRemaining : Duration;
         attribute numberOfRecoveries : Integer;
         attribute distanceRemaining : Real;
     }
@@ -92,16 +92,16 @@ package ros2_sysmlv2_nav2 {
 
     item def SmoothPathGoal {
         doc /* Maps to nav2_msgs/action/SmoothPath goal. */
-        attribute path : Path;
+        item path : Path;
         attribute smootherId : String;
-        attribute maxSmoothingDuration : Duration;
+        item maxSmoothingDuration : Duration;
         attribute checkForCollisions : Boolean;
     }
 
     item def SmoothPathResult {
         doc /* Maps to nav2_msgs/action/SmoothPath result. */
-        attribute path : Path;
-        attribute smoothingDuration : Duration;
+        item path : Path;
+        item smoothingDuration : Duration;
         attribute wasCompleted : Boolean;
         attribute errorCode : Integer;
     }
@@ -111,23 +111,23 @@ package ros2_sysmlv2_nav2 {
     item def SpinGoal {
         doc /* Maps to nav2_msgs/action/Spin goal. */
         attribute targetYaw : Real;
-        attribute timeAllowance : Duration;
+        item timeAllowance : Duration;
     }
 
     // ---- BackUp (BehaviorServer) ----
 
     item def BackUpGoal {
         doc /* Maps to nav2_msgs/action/BackUp goal. */
-        attribute target : Point;
+        item target : Point;
         attribute speed : Real;
-        attribute timeAllowance : Duration;
+        item timeAllowance : Duration;
     }
 
     // ---- Wait (BehaviorServer) ----
 
     item def WaitGoal {
         doc /* Maps to nav2_msgs/action/Wait goal. */
-        attribute waitTime : Duration;
+        item waitTime : Duration;
     }
 
     // ---- Nav2-specific messages ----
@@ -135,7 +135,7 @@ package ros2_sysmlv2_nav2 {
     item def Costmap {
         doc /* Maps to nav2_msgs/msg/Costmap.
                2D costmap with metadata and raw cell data. */
-        attribute header : Header;
+        item header : Header;
         attribute metadataResolution : Real;
         attribute metadataWidth : Integer;
         attribute metadataHeight : Integer;
@@ -145,7 +145,7 @@ package ros2_sysmlv2_nav2 {
     item def SpeedLimit {
         doc /* Maps to nav2_msgs/msg/SpeedLimit.
                Speed limit override for dynamic speed zones. */
-        attribute header : Header;
+        item header : Header;
         attribute speedLimit : Real;
         attribute percentage : Boolean;
     }

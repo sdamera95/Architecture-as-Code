@@ -20,28 +20,28 @@ package ros2_sysmlv2_nav_msgs {
     item def MapMetaData {
         doc /* Metadata for an OccupancyGrid map.
                Maps to nav_msgs/msg/MapMetaData. */
-        attribute mapLoadTime : Time;
+        item mapLoadTime : Time;
         attribute resolution : Real;
         attribute width : Integer;
         attribute height : Integer;
-        attribute origin : Pose;
+        item origin : Pose;
     }
 
     item def OccupancyGrid {
         doc /* 2D occupancy grid map. Cell values: 0=free, 100=occupied, -1=unknown.
                Maps to nav_msgs/msg/OccupancyGrid. */
-        attribute header : Header;
-        attribute info : MapMetaData;
+        item header : Header;
+        item info : MapMetaData;
         attribute data : Integer[0..*];
     }
 
     item def GridCells {
         doc /* Collection of cells in a grid, used for visualization.
                Maps to nav_msgs/msg/GridCells. */
-        attribute header : Header;
+        item header : Header;
         attribute cellWidth : Real;
         attribute cellHeight : Real;
-        attribute cells : Point[0..*];
+        item cells : Point[0..*];
     }
 
     // ===============================================================
@@ -53,10 +53,10 @@ package ros2_sysmlv2_nav_msgs {
                Maps to nav_msgs/msg/Odometry.
                Pose is in header.frame_id frame (typically "odom").
                Twist is in child_frame_id frame (typically "base_link"). */
-        attribute header : Header;
+        item header : Header;
         attribute childFrameId : String;
-        attribute pose : PoseWithCovariance;
-        attribute twist : TwistWithCovariance;
+        item pose : PoseWithCovariance;
+        item twist : TwistWithCovariance;
     }
 
     // ===============================================================
@@ -67,31 +67,31 @@ package ros2_sysmlv2_nav_msgs {
         doc /* Ordered list of poses representing a planned path.
                Maps to nav_msgs/msg/Path.
                Used by Nav2 planner server output. */
-        attribute header : Header;
-        attribute poses : PoseStamped[0..*];
+        item header : Header;
+        item poses : PoseStamped[0..*];
     }
 
     item def Goals {
         doc /* Ordered list of goal poses.
                Maps to nav_msgs/msg/Goals. */
-        attribute header : Header;
-        attribute goals : PoseStamped[0..*];
+        item header : Header;
+        item goals : PoseStamped[0..*];
     }
 
     item def TrajectoryPoint {
         doc /* Single point in a trajectory with full dynamics.
                Maps to nav_msgs/msg/TrajectoryPoint. */
-        attribute header : Header;
-        attribute pose : Pose;
-        attribute velocity : Twist;
-        attribute acceleration : Accel;
-        attribute effort : Wrench;
+        item header : Header;
+        item pose : Pose;
+        item velocity : Twist;
+        item acceleration : Accel;
+        item effort : Wrench;
     }
 
     item def Trajectory {
         doc /* Ordered list of trajectory points with full dynamics.
                Maps to nav_msgs/msg/Trajectory. */
-        attribute header : Header;
-        attribute points : TrajectoryPoint[0..*];
+        item header : Header;
+        item points : TrajectoryPoint[0..*];
     }
 }

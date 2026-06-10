@@ -31,7 +31,7 @@ MODEL_TEMPLATE = Path(__file__).parent.parent / "syside-demos" / "uav_trade_stud
 
 def load_and_evaluate(model_path: str) -> dict:
     """Load a SysML v2 model and extract UAV system-level attributes."""
-    model, diag = syside.load_model([model_path])
+    model, diag = syside.load_model([model_path], warnings_as_errors=True)
     if diag.contains_errors():
         return None
 

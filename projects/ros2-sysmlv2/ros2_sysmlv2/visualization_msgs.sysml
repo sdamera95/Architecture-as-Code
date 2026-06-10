@@ -45,30 +45,30 @@ package ros2_sysmlv2_visualization_msgs {
                Maps to visualization_msgs/msg/Marker.
                Supports 13 shape types (ARROW through ARROW_STRIP)
                and 4 action types (ADD, MODIFY, DELETE, DELETEALL). */
-        attribute header : Header;
+        item header : Header;
         attribute ns : String;
         attribute markerId : Integer;
         attribute markerType : Integer;
         attribute markerAction : Integer;
-        attribute pose : Pose;
-        attribute scale : Vector3;
-        attribute color : ColorRGBA;
-        attribute lifetime : Duration;
+        item pose : Pose;
+        item scale : Vector3;
+        item color : ColorRGBA;
+        item lifetime : Duration;
         attribute frameLocked : Boolean;
-        attribute points : Point[0..*];
-        attribute colors : ColorRGBA[0..*];
+        item points : Point[0..*];
+        item colors : ColorRGBA[0..*];
         attribute textureResource : String;
-        attribute texture : CompressedImage;
-        attribute uvCoordinates : UVCoordinate[0..*];
+        item texture : CompressedImage;
+        item uvCoordinates : UVCoordinate[0..*];
         attribute text : String;
         attribute meshResource : String;
-        attribute meshFile : MeshFile;
+        item meshFile : MeshFile;
         attribute meshUseEmbeddedMaterials : Boolean;
     }
 
     item def MarkerArray {
         doc /* An array of markers for batch display in RViz.
                Maps to visualization_msgs/msg/MarkerArray. */
-        attribute markers : Marker[0..*];
+        item markers : Marker[0..*];
     }
 }

@@ -14,7 +14,7 @@ LIB_FILES = sorted(str(f) for f in LIB_DIR.glob("*.sysml"))
 CONSUMER = "tests/consumer_test_robot.sysml"
 ALL_FILES = LIB_FILES + [CONSUMER]
 
-model, diag = syside.load_model(ALL_FILES)
+model, diag = syside.load_model(ALL_FILES, warnings_as_errors=True)
 assert not diag.contains_errors()
 
 part_defs = {n.name: n for n in model.nodes(syside.PartDefinition)}

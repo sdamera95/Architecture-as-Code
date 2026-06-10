@@ -34,19 +34,19 @@ package ros2_sysmlv2_sensor_msgs {
         doc /* Inertial Measurement Unit data: orientation, angular velocity,
                linear acceleration, each with 3x3 covariance.
                Maps to sensor_msgs/msg/Imu. */
-        attribute header : Header;
-        attribute orientation : Quaternion;
-        attribute orientationCovariance : Real;
-        attribute angularVelocity : Vector3;
-        attribute angularVelocityCovariance : Real;
-        attribute linearAcceleration : Vector3;
-        attribute linearAccelerationCovariance : Real;
+        item header : Header;
+        item orientation : Quaternion;
+        attribute orientationCovariance : Real[9];
+        item angularVelocity : Vector3;
+        attribute angularVelocityCovariance : Real[9];
+        item linearAcceleration : Vector3;
+        attribute linearAccelerationCovariance : Real[9];
     }
 
     item def LaserScan {
         doc /* Single scan from a planar laser range-finder.
                Maps to sensor_msgs/msg/LaserScan. */
-        attribute header : Header;
+        item header : Header;
         attribute angleMin : Real;
         attribute angleMax : Real;
         attribute angleIncrement : Real;
@@ -71,10 +71,10 @@ package ros2_sysmlv2_sensor_msgs {
     item def PointCloud2 {
         doc /* Multi-dimensional point cloud with arbitrary field descriptors.
                Maps to sensor_msgs/msg/PointCloud2. */
-        attribute header : Header;
+        item header : Header;
         attribute height : Integer;
         attribute width : Integer;
-        attribute fields : PointField[0..*];
+        item fields : PointField[0..*];
         attribute isBigendian : Boolean;
         attribute pointStep : Integer;
         attribute rowStep : Integer;
@@ -85,7 +85,7 @@ package ros2_sysmlv2_sensor_msgs {
     item def Image {
         doc /* Raw camera image data.
                Maps to sensor_msgs/msg/Image. */
-        attribute header : Header;
+        item header : Header;
         attribute height : Integer;
         attribute width : Integer;
         attribute encoding : String;
@@ -97,7 +97,7 @@ package ros2_sysmlv2_sensor_msgs {
     item def CompressedImage {
         doc /* Compressed image data (JPEG, PNG, etc.).
                Maps to sensor_msgs/msg/CompressedImage. */
-        attribute header : Header;
+        item header : Header;
         attribute format : String;
         attribute data : Integer[0..*];
     }
@@ -105,17 +105,17 @@ package ros2_sysmlv2_sensor_msgs {
     item def CameraInfo {
         doc /* Camera calibration and metadata.
                Maps to sensor_msgs/msg/CameraInfo. */
-        attribute header : Header;
+        item header : Header;
         attribute height : Integer;
         attribute width : Integer;
         attribute distortionModel : String;
         attribute d : Real[0..*];
-        attribute k : Real;
-        attribute r : Real;
-        attribute p : Real;
+        attribute k : Real[9];
+        attribute r : Real[9];
+        attribute p : Real[12];
         attribute binningX : Integer;
         attribute binningY : Integer;
-        attribute roi : RegionOfInterest;
+        item roi : RegionOfInterest;
     }
 
     // ===============================================================
@@ -131,7 +131,7 @@ package ros2_sysmlv2_sensor_msgs {
     item def MultiEchoLaserScan {
         doc /* Multi-echo variant of LaserScan.
                Maps to sensor_msgs/msg/MultiEchoLaserScan. */
-        attribute header : Header;
+        item header : Header;
         attribute angleMin : Real;
         attribute angleMax : Real;
         attribute angleIncrement : Real;
@@ -139,16 +139,16 @@ package ros2_sysmlv2_sensor_msgs {
         attribute scanTime : Real;
         attribute rangeMin : Real;
         attribute rangeMax : Real;
-        attribute ranges : LaserEcho[0..*];
-        attribute intensities : LaserEcho[0..*];
+        item ranges : LaserEcho[0..*];
+        item intensities : LaserEcho[0..*];
     }
 
     item def PointCloud {
         doc /* Legacy point cloud (prefer PointCloud2).
                Maps to sensor_msgs/msg/PointCloud. */
-        attribute header : Header;
-        attribute points : Point32[0..*];
-        attribute channels : ChannelFloat32[0..*];
+        item header : Header;
+        item points : Point32[0..*];
+        item channels : ChannelFloat32[0..*];
     }
 
     item def ChannelFloat32 {
@@ -174,28 +174,28 @@ package ros2_sysmlv2_sensor_msgs {
         doc /* GPS/GNSS fix data.
                Maps to sensor_msgs/msg/NavSatFix.
                Covariance type constants: UNKNOWN=0, APPROXIMATED=1, DIAGONAL_KNOWN=2, KNOWN=3. */
-        attribute header : Header;
-        attribute status : NavSatStatus;
+        item header : Header;
+        item status : NavSatStatus;
         attribute latitude : Real;
         attribute longitude : Real;
         attribute altitude : Real;
-        attribute positionCovariance : Real;
+        attribute positionCovariance : Real[9];
         attribute positionCovarianceType : Integer;
     }
 
     item def MagneticField {
         doc /* Magnetic field measurement.
                Maps to sensor_msgs/msg/MagneticField. */
-        attribute header : Header;
-        attribute magneticField : Vector3;
-        attribute magneticFieldCovariance : Real;
+        item header : Header;
+        item magneticField : Vector3;
+        attribute magneticFieldCovariance : Real[9];
     }
 
     item def TimeReference {
         doc /* External time source reference.
                Maps to sensor_msgs/msg/TimeReference. */
-        attribute header : Header;
-        attribute timeRef : Time;
+        item header : Header;
+        item timeRef : Time;
         attribute source : String;
     }
 
@@ -206,7 +206,7 @@ package ros2_sysmlv2_sensor_msgs {
     item def JointState {
         doc /* Joint position, velocity, and effort for a robot.
                Maps to sensor_msgs/msg/JointState. */
-        attribute header : Header;
+        item header : Header;
         attribute name : String[0..*];
         attribute position : Real[0..*];
         attribute velocity : Real[0..*];
@@ -216,11 +216,11 @@ package ros2_sysmlv2_sensor_msgs {
     item def MultiDOFJointState {
         doc /* Multi-DOF joint state using geometric transforms.
                Maps to sensor_msgs/msg/MultiDOFJointState. */
-        attribute header : Header;
+        item header : Header;
         attribute jointNames : String[0..*];
-        attribute transforms : Transform[0..*];
-        attribute twist : Twist[0..*];
-        attribute wrench : Wrench[0..*];
+        item transforms : Transform[0..*];
+        item twist : Twist[0..*];
+        item wrench : Wrench[0..*];
     }
 
     item def BatteryState {
@@ -228,7 +228,7 @@ package ros2_sysmlv2_sensor_msgs {
                Maps to sensor_msgs/msg/BatteryState.
                Power supply status, health, and technology constants
                modeled separately as enum defs. */
-        attribute header : Header;
+        item header : Header;
         attribute voltage : Real;
         attribute temperature : Real;
         attribute current : Real;
@@ -248,28 +248,28 @@ package ros2_sysmlv2_sensor_msgs {
 
     item def Temperature {
         doc /* Single temperature reading. Maps to sensor_msgs/msg/Temperature. */
-        attribute header : Header;
+        item header : Header;
         attribute temperature : Real;
         attribute variance : Real;
     }
 
     item def FluidPressure {
         doc /* Single fluid pressure reading. Maps to sensor_msgs/msg/FluidPressure. */
-        attribute header : Header;
+        item header : Header;
         attribute fluidPressure : Real;
         attribute variance : Real;
     }
 
     item def RelativeHumidity {
         doc /* Relative humidity reading. Maps to sensor_msgs/msg/RelativeHumidity. */
-        attribute header : Header;
+        item header : Header;
         attribute relativeHumidity : Real;
         attribute variance : Real;
     }
 
     item def Illuminance {
         doc /* Illuminance (ambient light) reading. Maps to sensor_msgs/msg/Illuminance. */
-        attribute header : Header;
+        item header : Header;
         attribute illuminance : Real;
         attribute variance : Real;
     }
@@ -282,7 +282,7 @@ package ros2_sysmlv2_sensor_msgs {
         doc /* Single range reading from ultrasonic or infrared sensor.
                Maps to sensor_msgs/msg/Range.
                Constants: ULTRASOUND=0, INFRARED=1. */
-        attribute header : Header;
+        item header : Header;
         attribute radiationType : Integer;
         attribute fieldOfView : Real;
         attribute minRange : Real;
@@ -298,7 +298,7 @@ package ros2_sysmlv2_sensor_msgs {
     item def Joy {
         doc /* Joystick state: axes and buttons.
                Maps to sensor_msgs/msg/Joy. */
-        attribute header : Header;
+        item header : Header;
         attribute axes : Real[0..*];
         attribute buttons : Integer[0..*];
     }
@@ -315,6 +315,6 @@ package ros2_sysmlv2_sensor_msgs {
     item def JoyFeedbackArray {
         doc /* Array of joystick feedback commands.
                Maps to sensor_msgs/msg/JoyFeedbackArray. */
-        attribute array : JoyFeedback[0..*];
+        item array : JoyFeedback[0..*];
     }
 }

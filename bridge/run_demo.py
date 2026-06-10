@@ -51,7 +51,7 @@ def main():
 
     # Stage 2: Generate
     print(f"\n── Stage 2: ROS2 Package Generation{' (fully-wired)' if args.wired else ''} ──")
-    output = generate_package(arch, str(pkg_path), smoke=args.wired)
+    output = generate_package(arch, str(pkg_path), wired=args.wired)
 
     # Summary
     print("\n" + "=" * 60)
