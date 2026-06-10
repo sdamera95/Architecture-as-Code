@@ -52,6 +52,20 @@ QOS_PRESET_PROPERTIES = {
     "best_available": {"reliability": "RELIABLE", "durability": "VOLATILE"},
 }
 
+# QoS preset names → rclcpp constructor expressions. `best_available` maps to
+# QoS(10) (not rclcpp::BestAvailableQoS) deliberately: the rclpy side maps it to
+# depth-10 default, so both languages exhibit identical wire QoS and satisfy the
+# monitor's QOS_PRESET_PROPERTIES expectations.
+QOS_PRESETS_RCLCPP = {
+    "sensor_data": "rclcpp::SensorDataQoS()",
+    "default": "rclcpp::QoS(10)",
+    "services_default": "rclcpp::ServicesQoS()",
+    "parameters": "rclcpp::ParametersQoS()",
+    "parameter_events": "rclcpp::ParameterEventsQoS()",
+    "system_default": "rclcpp::SystemDefaultsQoS()",
+    "best_available": "rclcpp::QoS(10)",
+}
+
 
 def check_qos_compatibility(pub_preset: str | None, sub_preset: str | None) -> dict:
     """Check DDS QoS compatibility between publisher and subscriber presets.
@@ -279,15 +293,80 @@ def msg_type_to_import(msg_type_str: str) -> tuple[str, str]:
 
 
 def to_snake_case(name: str) -> str:
-    """Convert CamelCase to snake_case."""
+    """Convert CamelCase to snake_case.
+
+    NOTE: splits before EVERY capital (EKFLocalizer -> e_k_f_localizer). Kept
+    as-is for module/executable names so Python and C++ executables match and
+    the shared launch template needs no changes. NOT suitable for C++ message
+    header derivation — use rosidl_snake_case for that.
+    """
     s = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
     return s
 
 
-def prepare_node_context(node: dict) -> dict:
+def rosidl_snake_case(name: str) -> str:
+    """CamelCase message name -> header basename, using the exact rosidl rule
+    (rosidl_pycommon.convert_camel_case_to_lower_case_underscore):
+    acronym/word boundaries split once (TFMessage -> tf_message), digits attach
+    (PointCloud2 -> point_cloud2). Deliberately NOT to_snake_case, which would
+    produce t_f_message and break the generated #include paths."""
+    s = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
+    s = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s)
+    return s.lower()
+
+
+def msg_type_to_cpp(msg_type_str: str) -> dict:
+    """'sensor_msgs.msg.LaserScan' -> {'cpp_type': 'sensor_msgs::msg::LaserScan',
+    'include': 'sensor_msgs/msg/laser_scan.hpp', 'package': 'sensor_msgs'}.
+    Generic over package.kind.Type[.Sub] so action sub-types work if the IR
+    ever fills them (include derives from the Type segment only)."""
+    parts = msg_type_str.split(".")
+    if len(parts) < 3:
+        return {"cpp_type": msg_type_str, "include": "", "package": ""}
+    package, kind, type_name = parts[0], parts[1], parts[2]
+    cpp_type = "::".join(parts)
+    include = f"{package}/{kind}/{rosidl_snake_case(type_name)}.hpp"
+    return {"cpp_type": cpp_type, "include": include, "package": package}
+
+
+def param_default_cpp(param_type: str, default) -> str:
+    """C++ literal for declare_parameter, mirroring the Python type-substring
+    branches in prepare_node_context."""
+    if default is None:
+        if "Double" in param_type:
+            return "0.0"
+        if "Integer" in param_type:
+            return "0"
+        if "Bool" in param_type:
+            return "false"
+        if "String" in param_type:
+            return 'std::string("")'
+        return "0.0  /* TODO: unknown parameter type */"
+    if isinstance(default, bool):
+        return "true" if default else "false"
+    if isinstance(default, float):
+        s = repr(default)
+        return s if "." in s or "e" in s else s + ".0"
+    if isinstance(default, int):
+        return str(default)
+    escaped = str(default).replace("\\", "\\\\").replace('"', '\\"')
+    return f'std::string("{escaped}")'
+
+
+def write_if_absent(path: Path, text: str) -> bool:
+    """Generation-gap guard: write only when the file does not exist.
+    Returns True if written."""
+    if path.exists():
+        return False
+    path.write_text(text)
+    return True
+
+
+def prepare_node_context(node: dict, lang: str = "py") -> dict:
     """Prepare a node dict for template rendering with resolved imports and class names."""
     imports = set()
     qos_symbols_used = set()
+    cpp_includes = set()
 
     # Process publishers
     for pub in node.get("publishers", []):
@@ -308,8 +387,16 @@ def prepare_node_context(node: dict) -> dict:
         # Fully-wired mode period: sensor topics at 10 Hz, others at 1 Hz
         if preset == "sensor_data":
             pub["wired_period"] = "0.1"  # 10 Hz
+            pub["wired_period_ms"] = 100
         else:
             pub["wired_period"] = "1.0"  # 1 Hz
+            pub["wired_period_ms"] = 1000
+
+        if lang == "cpp" and pub.get("msg_type"):
+            cpp = msg_type_to_cpp(pub["msg_type"])
+            pub["cpp_type"] = cpp["cpp_type"]
+            cpp_includes.add(cpp["include"])
+            pub["cpp_qos_arg"] = QOS_PRESETS_RCLCPP.get(preset, "rclcpp::QoS(10)") if preset else "rclcpp::QoS(10)"
 
     # Process subscribers
     for sub in node.get("subscribers", []):
@@ -326,11 +413,17 @@ def prepare_node_context(node: dict) -> dict:
         if qos_arg.startswith("qos_profile_"):
             qos_symbols_used.add(qos_arg)
 
+        if lang == "cpp" and sub.get("msg_type"):
+            cpp = msg_type_to_cpp(sub["msg_type"])
+            sub["cpp_type"] = cpp["cpp_type"]
+            cpp_includes.add(cpp["include"])
+            sub["cpp_qos_arg"] = QOS_PRESETS_RCLCPP.get(preset, "rclcpp::QoS(10)") if preset else "rclcpp::QoS(10)"
+
     # Process parameters
     for param in node.get("parameters", []):
         default = param.get("default")
+        param_type = str(param.get("type", ""))
         if default is None:
-            param_type = str(param.get("type", ""))
             if "Double" in param_type:
                 param["default_value"] = "0.0"
                 param["yaml_value"] = "0.0"
@@ -349,6 +442,8 @@ def prepare_node_context(node: dict) -> dict:
         else:
             param["default_value"] = repr(default)
             param["yaml_value"] = str(default)
+        if lang == "cpp":
+            param["cpp_default"] = param_default_cpp(param_type, default)
 
     # Add QoS import with only the profiles actually used
     if qos_symbols_used:
@@ -357,11 +452,88 @@ def prepare_node_context(node: dict) -> dict:
     return {
         "node": node,
         "imports": sorted(imports),
+        "cpp_includes": sorted(cpp_includes),
     }
 
 
-def generate_package(arch: dict, output_dir: str, wired: bool = False):
-    """Generate a complete ament_python ROS2 package.
+def _emit_py_sources(env, output, pkg_dir, pkg_name, system_name,
+                     custom_nodes, msg_deps, wired) -> tuple[list, int]:
+    """ament_python build files + gen-gap node sources. Returns (entry_points, n_impl_preserved)."""
+    tmpl = env.get_template("package.xml.j2")
+    (output / "package.xml").write_text(
+        tmpl.render(pkg_name=pkg_name, system_name=system_name, msg_deps=sorted(msg_deps)))
+
+    entry_points = []
+    for node in custom_nodes:
+        module_name = to_snake_case(node["type_name"]) + "_node"
+        executable = to_snake_case(node["type_name"])
+        entry_points.append({"executable": executable, "module": module_name})
+    entry_points.append({"executable": "conformance_monitor", "module": "conformance_monitor"})
+    entry_points.append({"executable": "activate_nodes", "module": "activate_nodes"})
+
+    tmpl = env.get_template("setup_py.j2")
+    (output / "setup.py").write_text(
+        tmpl.render(pkg_name=pkg_name, system_name=system_name, entry_points=entry_points))
+    tmpl = env.get_template("setup_cfg.j2")
+    (output / "setup.cfg").write_text(tmpl.render(pkg_name=pkg_name))
+    (pkg_dir / "__init__.py").write_text("")
+
+    # Generation gap: the *_node_base.py wiring is rewritten on every run;
+    # the derived *_node.py (demo logic + main) is generated only if absent.
+    base_tmpl = env.get_template("node_base.py.j2")
+    impl_tmpl = env.get_template("node_impl.py.j2")
+    preserved = 0
+    for node in custom_nodes:
+        ctx = prepare_node_context(node)
+        ctx["wired"] = wired
+        module_name = to_snake_case(node["type_name"]) + "_node"
+        ctx["module_name"] = module_name
+        (pkg_dir / f"{module_name}_base.py").write_text(base_tmpl.render(**ctx))
+        if not write_if_absent(pkg_dir / f"{module_name}.py", impl_tmpl.render(**ctx)):
+            preserved += 1
+    return entry_points, preserved
+
+
+def _emit_cpp_sources(env, output, pkg_name, system_name,
+                      custom_nodes, msg_deps, custom_msg_deps, wired) -> tuple[list, int]:
+    """ament_cmake build files + gen-gap C++ node sources. Returns (executables, n_impl_preserved)."""
+    (output / "src").mkdir(parents=True, exist_ok=True)
+    (output / "include" / pkg_name).mkdir(parents=True, exist_ok=True)
+    (output / "scripts").mkdir(parents=True, exist_ok=True)
+
+    hpp_tmpl = env.get_template("node_base.hpp.j2")
+    base_tmpl = env.get_template("node_base.cpp.j2")
+    impl_tmpl = env.get_template("node_impl.cpp.j2")
+    executables = []
+    preserved = 0
+    for node in custom_nodes:
+        ctx = prepare_node_context(node, lang="cpp")
+        ctx["wired"] = wired
+        ctx["pkg_name"] = pkg_name
+        module_name = to_snake_case(node["type_name"]) + "_node"
+        ctx["module_name"] = module_name
+        executables.append({"executable": to_snake_case(node["type_name"]),
+                            "module": module_name})
+        (output / "include" / pkg_name / f"{module_name}_base.hpp").write_text(
+            hpp_tmpl.render(**ctx))
+        (output / "src" / f"{module_name}_base.cpp").write_text(base_tmpl.render(**ctx))
+        if not write_if_absent(output / "src" / f"{module_name}.cpp", impl_tmpl.render(**ctx)):
+            preserved += 1
+
+    tmpl = env.get_template("package_cmake.xml.j2")
+    (output / "package.xml").write_text(
+        tmpl.render(pkg_name=pkg_name, system_name=system_name,
+                    msg_deps=sorted(msg_deps), custom_msg_deps=sorted(custom_msg_deps)))
+    tmpl = env.get_template("CMakeLists.txt.j2")
+    (output / "CMakeLists.txt").write_text(
+        tmpl.render(pkg_name=pkg_name, executables=executables,
+                    custom_msg_deps=sorted(custom_msg_deps)))
+    return executables, preserved
+
+
+def generate_package(arch: dict, output_dir: str, wired: bool = False,
+                     lang: str = "py", force: bool = False):
+    """Generate a complete ROS2 package (ament_python or ament_cmake).
 
     Args:
         arch: Architecture dict from extract_architecture.py.
@@ -370,6 +542,9 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
                default messages and all subscribers with logging callbacks,
                so the complete topology is verifiable before implementing
                real callback logic.
+        lang: "py" (ament_python, rclpy) or "cpp" (ament_cmake, rclcpp_lifecycle).
+        force: Delete the output directory first, discarding any hand-written
+               derived node implementations (generation-gap files).
     """
     system_name = arch["metadata"]["model_name"]
     pkg_name = to_snake_case(system_name)
@@ -379,16 +554,20 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
 
     output = Path(output_dir)
 
-    # Clean and create directory structure
-    if output.exists():
+    # Generation gap: only --force wipes the tree (hand-written derived
+    # implementations survive ordinary regeneration).
+    if force and output.exists():
         shutil.rmtree(output)
 
     pkg_dir = output / pkg_name
-    pkg_dir.mkdir(parents=True)
-    (output / "launch").mkdir()
-    (output / "config").mkdir()
-    (output / "resource").mkdir()
-    (output / "resource" / pkg_name).touch()
+    if lang == "py":
+        pkg_dir.mkdir(parents=True, exist_ok=True)
+        (output / "resource").mkdir(exist_ok=True)
+        (output / "resource" / pkg_name).touch()
+    else:
+        output.mkdir(parents=True, exist_ok=True)
+    (output / "launch").mkdir(exist_ok=True)
+    (output / "config").mkdir(exist_ok=True)
 
     # Set up Jinja2
     template_dir = Path(__file__).parent / "templates"
@@ -422,39 +601,22 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
     msg_deps.discard("rclpy")
     msg_deps.discard("")
 
-    # ── Generate package.xml ──
-    tmpl = env.get_template("package.xml.j2")
-    (output / "package.xml").write_text(
-        tmpl.render(pkg_name=pkg_name, system_name=system_name, msg_deps=sorted(msg_deps)))
-
-    # ── Generate setup.py ──
-    entry_points = []
+    # C++ compile deps: only what the generated node sources actually #include
+    # (custom-node pubs/subs); the full msg_deps set stays in package.xml.
+    custom_msg_deps = set()
     for node in custom_nodes:
-        module_name = to_snake_case(node["type_name"]) + "_node"
-        executable = to_snake_case(node["type_name"])
-        entry_points.append({"executable": executable, "module": module_name})
-    entry_points.append({"executable": "conformance_monitor", "module": "conformance_monitor"})
-    entry_points.append({"executable": "activate_nodes", "module": "activate_nodes"})
+        for ep in node.get("publishers", []) + node.get("subscribers", []):
+            mt = ep.get("msg_type", "")
+            if "." in mt:
+                custom_msg_deps.add(mt.split(".")[0])
 
-    tmpl = env.get_template("setup_py.j2")
-    (output / "setup.py").write_text(
-        tmpl.render(pkg_name=pkg_name, system_name=system_name, entry_points=entry_points))
-
-    # ── Generate setup.cfg ──
-    tmpl = env.get_template("setup_cfg.j2")
-    (output / "setup.cfg").write_text(tmpl.render(pkg_name=pkg_name))
-
-    # ── Generate __init__.py ──
-    (pkg_dir / "__init__.py").write_text("")
-
-    # ── Generate node skeletons ──
-    node_tmpl = env.get_template("lifecycle_node.py.j2")
-    for node in custom_nodes:
-        ctx = prepare_node_context(node)
-        ctx["wired"] = wired
-        module_name = to_snake_case(node["type_name"]) + "_node"
-        node_file = pkg_dir / f"{module_name}.py"
-        node_file.write_text(node_tmpl.render(**ctx))
+    # ── Build files + node sources (per language) ──
+    if lang == "py":
+        entry_points, preserved = _emit_py_sources(
+            env, output, pkg_dir, pkg_name, system_name, custom_nodes, msg_deps, wired)
+    else:
+        entry_points, preserved = _emit_cpp_sources(
+            env, output, pkg_name, system_name, custom_nodes, msg_deps, custom_msg_deps, wired)
 
     # ── Generate conformance monitor ──
     monitor_tmpl = env.get_template("conformance_monitor.py.j2")
@@ -504,8 +666,7 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
             "lifecycle": node.get("lifecycle", False),
         })
 
-    monitor_file = pkg_dir / "conformance_monitor.py"
-    monitor_file.write_text(monitor_tmpl.render(
+    monitor_text = monitor_tmpl.render(
         system_name=system_name,
         nodes=monitor_nodes,
         topics=topics,
@@ -515,18 +676,29 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
         param_declarations=param_declarations,
         qos_expectations=qos_expectations,
         frames=frames,
-    ))
+    )
+    # The monitor is language-neutral Python (graph introspection only): the same
+    # script ships inside the py package and as an installed program in the cpp
+    # package, so one monitor validates both implementations identically.
+    if lang == "py":
+        (pkg_dir / "conformance_monitor.py").write_text(monitor_text)
+    else:
+        monitor_file = output / "scripts" / "conformance_monitor"
+        monitor_file.write_text(monitor_text)
+        monitor_file.chmod(0o755)
 
     # ── Generate requirements report (Tier 1 design-time evaluation, Syside 0.9.0) ──
     requirements = arch.get("requirements", [])
     if requirements:
-        from datetime import datetime, timezone
         req_tmpl = env.get_template("requirements_report.md.j2")
         req_report = output / "requirements_report.md"
         req_report.write_text(req_tmpl.render(
             system_name=system_name,
             requirements=requirements,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            # Reuse the extraction timestamp: the report documents that
+            # extraction's Tier 1 evaluation, and this keeps regeneration
+            # deterministic (no fresh now() on content-identical reruns).
+            timestamp=arch["metadata"]["extraction_timestamp"],
         ))
 
     # ── Generate activate_nodes script ──
@@ -538,9 +710,14 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
                 "name": node.get("name", node["type_name"]),
                 "namespace": node.get("namespace", "/"),
             })
-    activator_file = pkg_dir / "activate_nodes.py"
-    activator_file.write_text(activator_tmpl.render(
-        pkg_name=pkg_name, lifecycle_nodes=lifecycle_nodes_for_activator))
+    activator_text = activator_tmpl.render(
+        pkg_name=pkg_name, lifecycle_nodes=lifecycle_nodes_for_activator)
+    if lang == "py":
+        (pkg_dir / "activate_nodes.py").write_text(activator_text)
+    else:
+        activator_file = output / "scripts" / "activate_nodes"
+        activator_file.write_text(activator_text)
+        activator_file.chmod(0o755)
 
     # ── Generate launch file ──
     launch_tmpl = env.get_template("launch.py.j2")
@@ -573,14 +750,19 @@ def generate_package(arch: dict, output_dir: str, wired: bool = False):
             shutil.rmtree(cache_dir)
 
     # ── Summary ──
-    generated_files = list(output.rglob("*"))
-    py_files = [f for f in generated_files if f.suffix == ".py" and f.is_file()]
+    generated_files = [f for f in output.rglob("*") if f.is_file()]
+    src_files = [f for f in generated_files
+                 if f.suffix in (".py", ".cpp", ".hpp")]
     print(f"\nGenerated ROS2 package: {output}")
     print(f"  Package name: {pkg_name}")
+    print(f"  Language: {lang}")
     print(f"  Custom nodes: {len(custom_nodes)}")
-    print(f"  Python files: {len(py_files)}")
+    print(f"  Source files: {len(src_files)}")
     print(f"  Entry points: {len(entry_points)}")
     print(f"  Message deps: {sorted(msg_deps)}")
+    if preserved:
+        print(f"  Preserved {preserved} existing node implementation file(s) "
+              f"(generation gap; use force=True to reset)")
 
     return output
 
@@ -595,13 +777,18 @@ def main():
     parser.add_argument("--wired", action="store_true",
                         help="Fully-wired mode: seed all endpoints with default data "
                              "for topology verification in rqt_graph")
+    parser.add_argument("--lang", choices=["py", "cpp"], default="py",
+                        help="Target implementation language (default: py)")
+    parser.add_argument("--force", action="store_true",
+                        help="Wipe the output directory first, discarding hand-written "
+                             "node implementations (generation-gap files)")
 
     args = parser.parse_args()
 
     with open(args.architecture_json) as f:
         arch = json.load(f)
 
-    generate_package(arch, args.output, wired=args.wired)
+    generate_package(arch, args.output, wired=args.wired, lang=args.lang, force=args.force)
 
 
 if __name__ == "__main__":

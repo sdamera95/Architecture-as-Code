@@ -1,6 +1,6 @@
 """Test the Tier 1 design-time requirement evaluation added in Stage C.
 
-Loads `syside-demos/uav_trade_study.sysml` and asserts that
+Loads `demos/uav/uav_trade_study.sysml` and asserts that
 `bridge.extract_architecture.extract_requirements()` returns the expected 3
 RequirementDefinition records with names, docs, and passed states matching the
 trade-study's baseline (all 3 should evaluate to `passed=True` against the
@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bridge"))
 import syside  # noqa: E402
 from extract_architecture import extract_requirements  # noqa: E402
 
-MODEL = Path(__file__).resolve().parents[1] / "syside-demos" / "uav_trade_study.sysml"
+MODEL = Path(__file__).resolve().parents[1] / "demos" / "uav" / "uav_trade_study.sysml"
 
 passed = 0
 failed = 0

@@ -147,9 +147,17 @@ output/
 
 # =============================================================================
 # Bridge pipeline output (generated SysML v2 → ROS2 packages, per CLAUDE.md)
+# NOTE: ros2-py-outputs/ and ros2-cpp-outputs/ are TRACKED (committed packages
+# pulled onto the ROS2 box); generated/ remains gitignored scratch space.
 # =============================================================================
 generated/
 figures/
+
+# =============================================================================
+# colcon build artifacts (in-place builds on the ROS2 box; build/ covered above)
+# =============================================================================
+install/
+log/
 
 # =============================================================================
 # Reference ROS2 source repos (cloned for msg file ground truth)

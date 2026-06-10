@@ -322,6 +322,19 @@ wheels = [
 ]
 
 [[package]]
+name = "rich"
+version = "15.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c0/8f/0722ca900cc807c13a6a0c696dacf35430f72e0ec571c4275d2371fca3e9/rich-15.0.0.tar.gz", hash = "sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36", size = 230680, upload-time = "2026-04-12T08:24:00.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl", hash = "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb", size = 310654, upload-time = "2026-04-12T08:24:02.83Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -341,14 +354,14 @@ wheels = [
 
 [[package]]
 name = "syside"
-version = "0.9.0"
+version = "0.10.1"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/f3/d77d24e42d1ae0826f2431522efafc43f7671791d4ae27dcb6d1e6b95bbd/syside-0.9.0-cp312-abi3-macosx_10_13_x86_64.whl", hash = "sha256:968bc3077d0b987a2a55eaa9b71ffcf3359dfeb22ab4ebdd2d0df0a7b00d058e", size = 11239715, upload-time = "2026-05-10T15:54:52.529Z" },
-    { url = "https://files.pythonhosted.org/packages/60/7e/eecd5e70bfe8afad5a74cfebf10559c0c5ca8c96f9e789039af12283381d/syside-0.9.0-cp312-abi3-macosx_11_0_arm64.whl", hash = "sha256:653a15ad0b3a81b2f1ced396574e5ad9385d0b0964ebcb4f4542a0cd3c2d590f", size = 10172958, upload-time = "2026-05-10T15:55:02.064Z" },
-    { url = "https://files.pythonhosted.org/packages/17/b7/41c95fa4dca3ad4d0250656a5c409662f5e48fa85b2d192af0332634256a/syside-0.9.0-cp312-abi3-manylinux_2_31_x86_64.whl", hash = "sha256:fd9ee63f017406a12d47274af0fe3a1ede431d2a078f808bbb0effb28aad70d5", size = 13154792, upload-time = "2026-05-10T15:54:54.995Z" },
-    { url = "https://files.pythonhosted.org/packages/2a/3f/e14dbe318ffe9c94942ed904215ceb3c254071a7cb5e8bb45dc59567766e/syside-0.9.0-cp312-abi3-win_amd64.whl", hash = "sha256:052e08dd882c3d7a9df17d5e57daefd26ad06a3bb79ce18ff2a622541f7e2490", size = 11278179, upload-time = "2026-05-10T15:54:57.352Z" },
-    { url = "https://files.pythonhosted.org/packages/2b/bd/d0cdd800e687e9776607f7ca7278350c5a448789ea3e8f8cbe2e91d3567f/syside-0.9.0-cp312-abi3-win_arm64.whl", hash = "sha256:4d94d9318b203e203c2c2aa74f93ffe3c69ab0236a1f5d325741c660b10b5552", size = 10437601, upload-time = "2026-05-10T15:54:59.797Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/ce/122dd87b4719f931bd051a6439b2ddeff9c2bf4ed89b69d45029001fa1b5/syside-0.10.1-cp312-abi3-macosx_10_13_x86_64.whl", hash = "sha256:dc3d46b7d1da4ca0d854770ffe63d111118408143f0c21cba7b30c53a489c2bf", size = 11258203, upload-time = "2026-06-10T14:31:22.333Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/da/41161a04576b3933a3436567ac2b085f65430be336b1a629a5a69c1ea729/syside-0.10.1-cp312-abi3-macosx_11_0_arm64.whl", hash = "sha256:95218253b64b2c9d01de1ba78835290692e483ca039e104a6fe6322918d34f29", size = 10185209, upload-time = "2026-06-10T14:31:26.748Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/2d/10c3121fd30bebc3ee28afbf00f7f4b6693d551b2b542d68052848be4175/syside-0.10.1-cp312-abi3-manylinux_2_31_x86_64.whl", hash = "sha256:82f9f2c8708a4cc087a1a4732ff93d69395dc16310ad1593c1e9d3c014f0ba99", size = 13169886, upload-time = "2026-06-10T14:31:24.627Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/8a/66b52eb6bb704dfb7cef51df5529ce69fc5cb46402a807dbeaba174357a4/syside-0.10.1-cp312-abi3-win_amd64.whl", hash = "sha256:d7818e1e4f286a134bd19731d6b6917494db92cedd9b1b9a27969600e3672fdc", size = 11163078, upload-time = "2026-06-10T14:31:28.867Z" },
+    { url = "https://files.pythonhosted.org/packages/da/e4/719534075c6398594cd4c2090a2bef30e959233c1aff62ecbeade5e98bd5/syside-0.10.1-cp312-abi3-win_arm64.whl", hash = "sha256:09368f162d86d2aa458ece1840b459133e3be4d2997c74fea82402387111af33", size = 10389441, upload-time = "2026-06-10T14:31:31.138Z" },
 ]
 
 [package.optional-dependencies]
@@ -356,6 +369,7 @@ reqif = [
     { name = "markdown-it-py", extra = ["plugins"] },
     { name = "markdownify" },
     { name = "reqif" },
+    { name = "rich" },
 ]
 
 [[package]]

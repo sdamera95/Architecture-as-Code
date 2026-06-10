@@ -44,7 +44,7 @@ package ros2_sysmlv2_shape_msgs {
                Type discriminator selects the shape; dimensions array
                holds shape-specific parameters. */
         attribute primitiveType : Integer;
-        attribute dimensions : Real[0..*];
+        attribute dimensions : Real[0..3];
         item polygon : Polygon;
     }
 }

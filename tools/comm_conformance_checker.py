@@ -209,8 +209,10 @@ def extract_sysml_comm_layer(sysml_files: list[str]) -> dict:
     for attr_def in model.nodes(syside.AttributeDefinition):
         fields = []
         for owned in attr_def.owned_elements.collect():
-            if attr := owned.try_cast(syside.AttributeUsage):
-                fields.append(attr.name)
+            # `ref item` fields (e.g. QoSProfile's Duration-typed lifespan/deadline/
+            # livelinessLeaseDuration) are ItemUsage, not AttributeUsage — check both.
+            if usage := (owned.try_cast(syside.AttributeUsage) or owned.try_cast(syside.ItemUsage)):
+                fields.append(usage.name)
         result['attr_defs'][attr_def.name] = fields
 
     for port_def in model.nodes(syside.PortDefinition):

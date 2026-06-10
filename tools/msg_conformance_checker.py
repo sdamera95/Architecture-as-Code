@@ -7,7 +7,25 @@ SysML v2 item definitions loaded via Syside Automator. Reports:
   - Missing fields (in .msg but not in SysML)
   - Extra fields (in SysML but not in .msg)
   - Type mismatches (field exists but type differs)
+  - Cardinality mismatches (array size/bound differs from the SysML multiplicity)
   - Constants in .msg (reported but not required in SysML — modeled as enums)
+
+Messages with no corresponding SysML item def are reported as SKIP, not FAIL:
+the library is a deliberate subset of each package (see README "Library
+architecture"), so unmodeled messages are out of scope by design.
+
+Deliberate deviations from the IDL (encoded in FIELD_RENAMES / enum allowance):
+
+  .msg field                          SysML field        Why
+  ----------------------------------  -----------------  --------------------------
+  DiagnosticStatus.message            diagnosticMessage  `message` is a SysML v2
+                                                         reserved keyword
+  Marker.id / .type / .action         markerId /         `action` is reserved;
+                                      markerType /       id/type renamed for
+                                      markerAction       consistency with it
+  SolidPrimitive.type                 primitiveType      consistency with the above
+  DiagnosticStatus.level (byte +      level :            integer constants are
+  KEY=value constants)                DiagnosticLevel    modeled as an enum def
 
 Usage:
     .venv/bin/python tools/msg_conformance_checker.py \\
@@ -76,8 +94,9 @@ class MsgField:
     name: str
     ros2_type: str
     is_array: bool = False
-    array_size: Optional[int] = None  # None = variable, int = fixed
-    sysml_type: Optional[str] = None  # resolved SysML type
+    array_size: Optional[int] = None   # None = variable, int = fixed ([N])
+    array_bound: Optional[int] = None  # upper bound for bounded arrays ([<=N])
+    sysml_type: Optional[str] = None   # resolved SysML type
 
 
 @dataclass
@@ -129,18 +148,21 @@ def parse_msg_file(path: Path, package: str) -> ParsedMsg:
             continue
 
         # Parse field: type[array] name [default]
-        # Examples: "float64 x", "float64 x 0", "float32[] ranges", "float64[36] covariance"
+        # Examples: "float64 x", "float64 x 0", "float32[] ranges",
+        #           "float64[36] covariance", "float64[<=3] dimensions" (bounded)
         field_match = re.match(
-            r'^(\w+(?:/\w+)?)\s*(\[(\d*)\])?\s+(\w+)(?:\s+.*)?$', line
+            r'^(\w+(?:/\w+)?)\s*(\[(<=)?(\d*)\])?\s+(\w+)(?:\s+.*)?$', line
         )
         if field_match:
             ros2_type = field_match.group(1)
             array_bracket = field_match.group(2)
-            array_size_str = field_match.group(3)
-            field_name = field_match.group(4)
+            bound_marker = field_match.group(3)
+            array_size_str = field_match.group(4)
+            field_name = field_match.group(5)
 
             is_array = array_bracket is not None
-            array_size = int(array_size_str) if array_size_str else None
+            array_size = int(array_size_str) if array_size_str and not bound_marker else None
+            array_bound = int(array_size_str) if array_size_str and bound_marker else None
 
             # Resolve SysML type
             sysml_type = resolve_sysml_type(ros2_type)
@@ -150,6 +172,7 @@ def parse_msg_file(path: Path, package: str) -> ParsedMsg:
                 ros2_type=ros2_type,
                 is_array=is_array,
                 array_size=array_size,
+                array_bound=array_bound,
                 sysml_type=sysml_type,
             ))
             continue
@@ -186,6 +209,7 @@ class SysmlItemDef:
     qualified_name: str
     attributes: dict[str, str] = field(default_factory=dict)  # name → type name
     multiplicities: dict[str, str] = field(default_factory=dict)  # name → multiplicity descriptor ("scalar"/"[N]"/"[0..*]"/"[lo..hi]")
+    enum_fields: set = field(default_factory=set)  # field names typed by an EnumerationDefinition
 
 
 def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
@@ -217,6 +241,8 @@ def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
                 type_name = types_list[0].name if types_list else "Unknown"
                 sysml_item.attributes[field.name] = type_name
                 sysml_item.multiplicities[field.name] = sysml_multiplicity_descriptor(field)
+                if types_list and types_list[0].try_cast(syside.EnumerationDefinition):
+                    sysml_item.enum_fields.add(field.name)
 
         items[item_def.name] = sysml_item
 
@@ -237,6 +263,8 @@ def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
                 type_name = types_list[0].name if types_list else "Unknown"
                 sysml_item.attributes[field.name] = type_name
                 sysml_item.multiplicities[field.name] = sysml_multiplicity_descriptor(field)
+                if types_list and types_list[0].try_cast(syside.EnumerationDefinition):
+                    sysml_item.enum_fields.add(field.name)
 
         items[attr_def.name] = sysml_item
 
@@ -246,6 +274,17 @@ def extract_sysml_items(sysml_files: list[str]) -> dict[str, SysmlItemDef]:
 # ══════════════════════════════════════════════════════════════
 # 3. CONFORMANCE CHECKER
 # ══════════════════════════════════════════════════════════════
+
+# Deliberate .msg → SysML field renames (SysML v2 reserved keywords and naming
+# policy — see the module docstring table). Keyed (package, message, msg_field).
+FIELD_RENAMES = {
+    ("diagnostic_msgs", "DiagnosticStatus", "message"): "diagnosticMessage",
+    ("shape_msgs", "SolidPrimitive", "type"): "primitiveType",
+    ("visualization_msgs", "Marker", "id"): "markerId",
+    ("visualization_msgs", "Marker", "type"): "markerType",
+    ("visualization_msgs", "Marker", "action"): "markerAction",
+}
+
 
 @dataclass
 class FieldCheck:
@@ -267,6 +306,11 @@ class MsgCheck:
     field_checks: list[FieldCheck] = field(default_factory=list)
     extra_sysml_attrs: list[str] = field(default_factory=list)
     constants: list[MsgConstant] = field(default_factory=list)
+
+    @property
+    def skipped(self) -> bool:
+        """Unmodeled by design — the library is a deliberate subset per package."""
+        return not self.sysml_item_found
 
     @property
     def passed(self) -> bool:
@@ -303,15 +347,7 @@ def check_msg_against_sysml(
     )
 
     if not result.sysml_item_found:
-        # Mark all fields as missing
-        for f in parsed_msg.fields:
-            result.field_checks.append(FieldCheck(
-                field_name=f.name,
-                ros2_type=f.ros2_type,
-                expected_sysml_type=f.sysml_type or "?",
-                status="MISSING",
-                note=f"No item def '{sysml_name}' found in SysML model",
-            ))
+        # Unmodeled message: SKIP (out of scope by design), no field checks generated.
         return result
 
     sysml_item = sysml_items[sysml_name]
@@ -319,12 +355,16 @@ def check_msg_against_sysml(
     sysml_mults = dict(sysml_item.multiplicities)
 
     for msg_field in parsed_msg.fields:
-        # Match the .msg field to a SysML attribute by snake_case, then camelCase.
+        # Match the .msg field to a SysML attribute by snake_case, then camelCase,
+        # then the deliberate-rename table (reserved keywords etc.).
+        rename_key = (parsed_msg.package, parsed_msg.name, msg_field.name)
         matched_name = None
         if msg_field.name in sysml_attrs:
             matched_name = msg_field.name
         elif to_camel_case(msg_field.name) in sysml_attrs:
             matched_name = to_camel_case(msg_field.name)
+        elif FIELD_RENAMES.get(rename_key) in sysml_attrs:
+            matched_name = FIELD_RENAMES[rename_key]
 
         if matched_name is None:
             result.field_checks.append(FieldCheck(
@@ -332,25 +372,39 @@ def check_msg_against_sysml(
                 ros2_type=msg_field.ros2_type,
                 expected_sysml_type=msg_field.sysml_type or "?",
                 status="MISSING",
-                note="Field not found in SysML item def (tried snake_case and camelCase)",
+                note="Field not found in SysML item def (tried snake_case, camelCase, rename table)",
             ))
             continue
 
         actual_type = sysml_attrs.pop(matched_name)
         actual_mult = sysml_mults.get(matched_name, "scalar")
         expected_type = msg_field.sysml_type
-        via_camel = matched_name != msg_field.name
-        camel_note = f"matched via camelCase: {matched_name}" if via_camel else ""
+        via_camel = matched_name == to_camel_case(msg_field.name) and matched_name != msg_field.name
+        via_rename = matched_name == FIELD_RENAMES.get(rename_key)
+        camel_note = (f"matched via camelCase: {matched_name}" if via_camel
+                      else f"deliberate rename: {matched_name}" if via_rename else "")
 
-        # 1. Type check (flexible: allow SysML name variations)
+        # 1. Type check (flexible: allow SysML name variations). Integer-like .msg
+        #    fields whose SysML type is an enumeration def PASS: the .msg constants
+        #    are modeled as the enum's literals (e.g. byte level : DiagnosticLevel).
         if not types_match(expected_type, actual_type):
+            if expected_type == "Integer" and matched_name in sysml_item.enum_fields:
+                result.field_checks.append(FieldCheck(
+                    field_name=msg_field.name,
+                    ros2_type=msg_field.ros2_type,
+                    expected_sysml_type=expected_type,
+                    actual_sysml_type=actual_type,
+                    status="PASS",
+                    note=f"constants modeled as enum def {actual_type}",
+                ))
+                continue
             result.field_checks.append(FieldCheck(
                 field_name=msg_field.name,
                 ros2_type=msg_field.ros2_type,
                 expected_sysml_type=expected_type,
                 actual_sysml_type=actual_type,
                 status="TYPE_MISMATCH",
-                note=(f"{camel_note}, but type differs" if via_camel
+                note=(f"{camel_note}, but type differs" if camel_note
                       else f"Expected '{expected_type}', got '{actual_type}'"),
             ))
             continue
@@ -427,11 +481,14 @@ def sysml_multiplicity_descriptor(field) -> str:
 
 
 def ros2_cardinality_descriptor(mf: MsgField) -> str:
-    """The SysML multiplicity a ROS2 field requires: 'scalar', '[N]' (fixed), or '[0..*]' (variable)."""
+    """The SysML multiplicity a ROS2 field requires:
+    'scalar', '[N]' (fixed), '[0..N]' (bounded, IDL [<=N]), or '[0..*]' (variable)."""
     if not mf.is_array:
         return "scalar"
     if mf.array_size is not None:
         return f"[{mf.array_size}]"
+    if mf.array_bound is not None:
+        return f"[0..{mf.array_bound}]"
     return "[0..*]"
 
 
@@ -449,7 +506,14 @@ def check_cardinality(mf: MsgField, expected_type: str, actual_type: str, sysml_
         return True, ""
     if want == "[0..*]" and sysml_mult.startswith("[") and ".." in sysml_mult:
         return True, ""
-    ros2_decl = mf.ros2_type + ("" if not mf.is_array else (f"[{mf.array_size}]" if mf.array_size is not None else "[]"))
+    if not mf.is_array:
+        ros2_decl = mf.ros2_type
+    elif mf.array_size is not None:
+        ros2_decl = f"{mf.ros2_type}[{mf.array_size}]"
+    elif mf.array_bound is not None:
+        ros2_decl = f"{mf.ros2_type}[<={mf.array_bound}]"
+    else:
+        ros2_decl = f"{mf.ros2_type}[]"
     return False, f"ROS2 '{ros2_decl}' requires SysML multiplicity {want}, got {sysml_mult}"
 
 
@@ -464,12 +528,12 @@ def to_camel_case(snake_str: str) -> str:
 # ══════════════════════════════════════════════════════════════
 
 def print_report(checks: list[MsgCheck], verbose: bool = False):
-    """Print a conformance report."""
-    total_msgs = len(checks)
-    msgs_found = sum(1 for c in checks if c.sysml_item_found)
-    msgs_passed = sum(1 for c in checks if c.passed)
-    total_fields = sum(len(c.field_checks) for c in checks)
-    fields_passed = sum(c.n_pass for c in checks)
+    """Print a conformance report. Skipped (unmodeled) messages don't count as failures."""
+    modeled = [c for c in checks if not c.skipped]
+    n_skipped = len(checks) - len(modeled)
+    msgs_passed = sum(1 for c in modeled if c.passed)
+    total_fields = sum(len(c.field_checks) for c in modeled)
+    fields_passed = sum(c.n_pass for c in modeled)
 
     print("=" * 70)
     print("ROS2 .msg → SysML v2 Conformance Report")
@@ -477,8 +541,12 @@ def print_report(checks: list[MsgCheck], verbose: bool = False):
     print()
 
     for check in checks:
-        status = "PASS" if check.passed else "FAIL" if check.sysml_item_found else "MISSING"
-        icon = "✓" if check.passed else "✗" if check.sysml_item_found else "?"
+        if check.skipped:
+            if verbose:
+                print(f"  [–] {check.package}/{check.msg_name}: SKIP (not modeled — library is a deliberate subset)")
+            continue
+        status = "PASS" if check.passed else "FAIL"
+        icon = "✓" if check.passed else "✗"
         print(f"  [{icon}] {check.package}/{check.msg_name}: "
               f"{check.n_pass}/{len(check.field_checks)} fields | {status}")
 
@@ -502,12 +570,12 @@ def print_report(checks: list[MsgCheck], verbose: bool = False):
 
     print()
     print("-" * 70)
-    print(f"  Messages: {msgs_found}/{total_msgs} found in SysML, "
-          f"{msgs_passed}/{total_msgs} fully conformant")
+    print(f"  Messages: {msgs_passed}/{len(modeled)} modeled messages fully conformant"
+          f"{f', {n_skipped} skipped (not modeled)' if n_skipped else ''}")
     print(f"  Fields:   {fields_passed}/{total_fields} matched")
     print("-" * 70)
 
-    return msgs_passed == total_msgs
+    return msgs_passed == len(modeled)
 
 
 # ══════════════════════════════════════════════════════════════

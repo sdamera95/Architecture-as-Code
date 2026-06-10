@@ -1,0 +1,980 @@
+{
+  "metadata": {
+    "model_name": "AutonomousGroundRobot",
+    "extracted_from": [
+      "/Users/sdamera/research/projects/Architecture-as-Code/demos/agr/showcase_agr_full.sysml"
+    ],
+    "extraction_timestamp": "2026-06-10T22:50:31+00:00",
+    "library_version": "0.1.0-alpha"
+  },
+  "nodes": [
+    {
+      "name": "lidar",
+      "type_name": "LidarDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "sensors.lidar.driver"
+    },
+    {
+      "name": "imu",
+      "type_name": "ImuDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/imu/data",
+          "msg_type": "sensor_msgs.msg.Imu",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "sensors.imu.driver"
+    },
+    {
+      "name": "camera",
+      "type_name": "CameraDriver",
+      "namespace": "/sensors",
+      "lifecycle": true,
+      "archetype": "SensorDriver",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "sensorPub",
+          "topic_name": "/camera/image",
+          "msg_type": "sensor_msgs.msg.Image",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "sensors.camera.driver"
+    },
+    {
+      "name": "obstacle_detector",
+      "type_name": "ObstacleDetector",
+      "namespace": "/perception",
+      "lifecycle": true,
+      "archetype": "PerceptionPipeline",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "processedPub",
+          "topic_name": "/detections",
+          "msg_type": "sensor_msgs.msg.PointCloud2",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "rawSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        },
+        {
+          "port_name": "cameraSub",
+          "topic_name": "/camera/image",
+          "msg_type": "sensor_msgs.msg.Image",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.perception.obstacleDetector"
+    },
+    {
+      "name": "ekf_localizer",
+      "type_name": "EKFLocalizer",
+      "namespace": "/estimation",
+      "lifecycle": true,
+      "archetype": "Estimator",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "posePub",
+          "topic_name": "/odom_filtered",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "sensorSub",
+          "topic_name": "/imu/data",
+          "msg_type": "sensor_msgs.msg.Imu",
+          "qos_preset": null
+        },
+        {
+          "port_name": "scanSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": null
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.localization.ekfLocalizer"
+    },
+    {
+      "name": "path_planner",
+      "type_name": "PathPlanner",
+      "namespace": "/planning",
+      "lifecycle": true,
+      "archetype": "Planner",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "planPub",
+          "topic_name": "/plan",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "mapSub",
+          "topic_name": "/map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": "best_available"
+        },
+        {
+          "port_name": "detectionsSub",
+          "topic_name": "/detections",
+          "msg_type": "sensor_msgs.msg.PointCloud2",
+          "qos_preset": "default"
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "planAction",
+          "action_name": "compute_path",
+          "goal_type": null,
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.planning.pathPlanner"
+    },
+    {
+      "name": "trajectory_tracker",
+      "type_name": "TrajectoryTracker",
+      "namespace": "/control",
+      "lifecycle": true,
+      "archetype": "Controller",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "commandPub",
+          "topic_name": "/cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "stateSub",
+          "topic_name": "/odom_filtered",
+          "msg_type": "nav_msgs.msg.Odometry",
+          "qos_preset": "default"
+        },
+        {
+          "port_name": "planSub",
+          "topic_name": "/plan",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": "default"
+        }
+      ],
+      "action_servers": [
+        {
+          "port_name": "controlAction",
+          "action_name": "follow_trajectory",
+          "goal_type": null,
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [
+        {
+          "name": "max_linear_velocity",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        },
+        {
+          "name": "max_angular_velocity",
+          "type": "ros2_sysmlv2_params::ParameterTypeKind::Double",
+          "default": null
+        }
+      ],
+      "instance_name": "autonomyStack.control.trajectoryTracker"
+    },
+    {
+      "name": "velocity_smoother",
+      "type_name": "AGRVelocitySmoother",
+      "namespace": "/safety",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "/cmd_vel_smooth",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "system_default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "/cmd_vel",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "default"
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.safety.velocitySmoother"
+    },
+    {
+      "name": "collision_guard",
+      "type_name": "CollisionGuard",
+      "namespace": "/safety",
+      "lifecycle": true,
+      "archetype": "VelocityFilter",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "cmdVelOut",
+          "topic_name": "/cmd_vel_out",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "default"
+        }
+      ],
+      "subscribers": [
+        {
+          "port_name": "cmdVelIn",
+          "topic_name": "/cmd_vel_smooth",
+          "msg_type": "geometry_msgs.msg.Twist",
+          "qos_preset": "system_default"
+        },
+        {
+          "port_name": "scanSub",
+          "topic_name": "/scan",
+          "msg_type": "sensor_msgs.msg.LaserScan",
+          "qos_preset": "sensor_data"
+        }
+      ],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.safety.collisionGuard"
+    },
+    {
+      "name": "map_server",
+      "type_name": "StaticMapServer",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "MapProvider",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "mapPub",
+          "topic_name": "/map",
+          "msg_type": "nav_msgs.msg.OccupancyGrid",
+          "qos_preset": "best_available"
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [],
+      "action_clients": [],
+      "service_servers": [
+        {
+          "port_name": "mapService",
+          "service_name": "get_map",
+          "request_type": null,
+          "response_type": null
+        }
+      ],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.mapping.mapServer"
+    },
+    {
+      "name": "mission_coordinator",
+      "type_name": "MissionCoordinator",
+      "namespace": "/",
+      "lifecycle": true,
+      "archetype": "BehaviorCoordinator",
+      "is_standard": false,
+      "publishers": [
+        {
+          "port_name": "statusPub",
+          "topic_name": "/mission_status",
+          "msg_type": "nav_msgs.msg.Path",
+          "qos_preset": null
+        }
+      ],
+      "subscribers": [],
+      "action_servers": [
+        {
+          "port_name": "goalAction",
+          "action_name": "execute_mission",
+          "goal_type": null,
+          "feedback_type": null,
+          "result_type": null
+        }
+      ],
+      "action_clients": [],
+      "service_servers": [],
+      "service_clients": [],
+      "parameters": [],
+      "instance_name": "autonomyStack.coordination.missionCoordinator"
+    }
+  ],
+  "connections": [
+    {
+      "name": "scanToDetector",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "sensors",
+            "lidar",
+            "driver",
+            "sensorPub"
+          ],
+          "path": "sensors.lidar.driver.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "perception",
+            "obstacleDetector",
+            "rawSub"
+          ],
+          "path": "autonomyStack.perception.obstacleDetector.rawSub"
+        }
+      ],
+      "source": "sensors.lidar.driver.sensorPub",
+      "target": "autonomyStack.perception.obstacleDetector.rawSub"
+    },
+    {
+      "name": "cameraToDetector",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "sensors",
+            "camera",
+            "driver",
+            "sensorPub"
+          ],
+          "path": "sensors.camera.driver.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "perception",
+            "obstacleDetector",
+            "cameraSub"
+          ],
+          "path": "autonomyStack.perception.obstacleDetector.cameraSub"
+        }
+      ],
+      "source": "sensors.camera.driver.sensorPub",
+      "target": "autonomyStack.perception.obstacleDetector.cameraSub"
+    },
+    {
+      "name": "imuToEkf",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "sensors",
+            "imu",
+            "driver",
+            "sensorPub"
+          ],
+          "path": "sensors.imu.driver.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "localization",
+            "ekfLocalizer",
+            "sensorSub"
+          ],
+          "path": "autonomyStack.localization.ekfLocalizer.sensorSub"
+        }
+      ],
+      "source": "sensors.imu.driver.sensorPub",
+      "target": "autonomyStack.localization.ekfLocalizer.sensorSub"
+    },
+    {
+      "name": "scanToEkf",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "sensors",
+            "lidar",
+            "driver",
+            "sensorPub"
+          ],
+          "path": "sensors.lidar.driver.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "localization",
+            "ekfLocalizer",
+            "scanSub"
+          ],
+          "path": "autonomyStack.localization.ekfLocalizer.scanSub"
+        }
+      ],
+      "source": "sensors.lidar.driver.sensorPub",
+      "target": "autonomyStack.localization.ekfLocalizer.scanSub"
+    },
+    {
+      "name": "detectionsToPlanner",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "autonomyStack",
+            "perception",
+            "obstacleDetector",
+            "processedPub"
+          ],
+          "path": "autonomyStack.perception.obstacleDetector.processedPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "planning",
+            "pathPlanner",
+            "detectionsSub"
+          ],
+          "path": "autonomyStack.planning.pathPlanner.detectionsSub"
+        }
+      ],
+      "source": "autonomyStack.perception.obstacleDetector.processedPub",
+      "target": "autonomyStack.planning.pathPlanner.detectionsSub"
+    },
+    {
+      "name": "mapToPlanner",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "autonomyStack",
+            "mapping",
+            "mapServer",
+            "mapPub"
+          ],
+          "path": "autonomyStack.mapping.mapServer.mapPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "planning",
+            "pathPlanner",
+            "mapSub"
+          ],
+          "path": "autonomyStack.planning.pathPlanner.mapSub"
+        }
+      ],
+      "source": "autonomyStack.mapping.mapServer.mapPub",
+      "target": "autonomyStack.planning.pathPlanner.mapSub"
+    },
+    {
+      "name": "planToTracker",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "autonomyStack",
+            "planning",
+            "pathPlanner",
+            "planPub"
+          ],
+          "path": "autonomyStack.planning.pathPlanner.planPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "control",
+            "trajectoryTracker",
+            "planSub"
+          ],
+          "path": "autonomyStack.control.trajectoryTracker.planSub"
+        }
+      ],
+      "source": "autonomyStack.planning.pathPlanner.planPub",
+      "target": "autonomyStack.control.trajectoryTracker.planSub"
+    },
+    {
+      "name": "odomToTracker",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "autonomyStack",
+            "localization",
+            "ekfLocalizer",
+            "posePub"
+          ],
+          "path": "autonomyStack.localization.ekfLocalizer.posePub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "control",
+            "trajectoryTracker",
+            "stateSub"
+          ],
+          "path": "autonomyStack.control.trajectoryTracker.stateSub"
+        }
+      ],
+      "source": "autonomyStack.localization.ekfLocalizer.posePub",
+      "target": "autonomyStack.control.trajectoryTracker.stateSub"
+    },
+    {
+      "name": "cmdVelToSmoother",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "autonomyStack",
+            "control",
+            "trajectoryTracker",
+            "commandPub"
+          ],
+          "path": "autonomyStack.control.trajectoryTracker.commandPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "safety",
+            "velocitySmoother",
+            "cmdVelIn"
+          ],
+          "path": "autonomyStack.safety.velocitySmoother.cmdVelIn"
+        }
+      ],
+      "source": "autonomyStack.control.trajectoryTracker.commandPub",
+      "target": "autonomyStack.safety.velocitySmoother.cmdVelIn"
+    },
+    {
+      "name": "smootherToGuard",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "autonomyStack",
+            "safety",
+            "velocitySmoother",
+            "cmdVelOut"
+          ],
+          "path": "autonomyStack.safety.velocitySmoother.cmdVelOut"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "safety",
+            "collisionGuard",
+            "cmdVelIn"
+          ],
+          "path": "autonomyStack.safety.collisionGuard.cmdVelIn"
+        }
+      ],
+      "source": "autonomyStack.safety.velocitySmoother.cmdVelOut",
+      "target": "autonomyStack.safety.collisionGuard.cmdVelIn"
+    },
+    {
+      "name": "scanToGuard",
+      "connection_type": "TopicConnection",
+      "endpoints": [
+        {
+          "end_name": "pub",
+          "chain": [
+            "sensors",
+            "lidar",
+            "driver",
+            "sensorPub"
+          ],
+          "path": "sensors.lidar.driver.sensorPub"
+        },
+        {
+          "end_name": "sub",
+          "chain": [
+            "autonomyStack",
+            "safety",
+            "collisionGuard",
+            "scanSub"
+          ],
+          "path": "autonomyStack.safety.collisionGuard.scanSub"
+        }
+      ],
+      "source": "sensors.lidar.driver.sensorPub",
+      "target": "autonomyStack.safety.collisionGuard.scanSub"
+    }
+  ],
+  "tf_frames": [
+    {
+      "name": "tfTree.frames.mapFrame",
+      "frame_id": "map",
+      "type_name": "MapFrame"
+    },
+    {
+      "name": "tfTree.frames.odomFrame",
+      "frame_id": "odom",
+      "type_name": "OdomFrame"
+    },
+    {
+      "name": "tfTree.frames.baseLinkFrame",
+      "frame_id": "base_link",
+      "type_name": "BaseLinkFrame"
+    },
+    {
+      "name": "tfTree.lidarFrame",
+      "frame_id": "lidar_link",
+      "type_name": "CoordinateFrame"
+    },
+    {
+      "name": "tfTree.imuFrame",
+      "frame_id": "imu_link",
+      "type_name": "CoordinateFrame"
+    },
+    {
+      "name": "tfTree.cameraFrame",
+      "frame_id": "camera_link",
+      "type_name": "CoordinateFrame"
+    }
+  ],
+  "tf_transforms": [
+    {
+      "name": "mapToOdom",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "odomToBaseLink",
+      "parent_frame": "parent",
+      "child_frame": "child",
+      "is_static": false
+    },
+    {
+      "name": "lidarMount",
+      "parent_frame": "tfTree.frames.baseLinkFrame",
+      "child_frame": "tfTree.lidarFrame",
+      "is_static": true
+    },
+    {
+      "name": "imuMount",
+      "parent_frame": "tfTree.frames.baseLinkFrame",
+      "child_frame": "tfTree.imuFrame",
+      "is_static": true
+    },
+    {
+      "name": "cameraMount",
+      "parent_frame": "tfTree.frames.baseLinkFrame",
+      "child_frame": "tfTree.cameraFrame",
+      "is_static": true
+    }
+  ],
+  "requirements": [
+    {
+      "name": "MaxVelocityReq",
+      "qualified_name": "ShowcaseAGRFull::MaxVelocityReq",
+      "kind": "definition",
+      "doc": "Maximum velocity shall not exceed 2.0 m/s in\nautonomous mode (warehouse safety limit).",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "MinEnduranceReq",
+      "qualified_name": "ShowcaseAGRFull::MinEnduranceReq",
+      "kind": "definition",
+      "doc": "Operational endurance shall be at least 4 hours\non a single battery charge.",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "MaxMassReq",
+      "qualified_name": "ShowcaseAGRFull::MaxMassReq",
+      "kind": "definition",
+      "doc": "Total system mass shall not exceed 25 kg\nfor safe manual handling.",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "LocalizationAccuracyReq",
+      "qualified_name": "ShowcaseAGRFull::LocalizationAccuracyReq",
+      "kind": "definition",
+      "doc": "Localization accuracy shall be within 5 cm RMS\nin a mapped environment.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "ObstacleDetectionRangeReq",
+      "qualified_name": "ShowcaseAGRFull::ObstacleDetectionRangeReq",
+      "kind": "definition",
+      "doc": "Obstacles shall be detected at minimum 3 meters\nrange in all directions.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "EmergencyStopReq",
+      "qualified_name": "ShowcaseAGRFull::EmergencyStopReq",
+      "kind": "definition",
+      "doc": "The robot shall halt all motion within 0.5 seconds\nof receiving an emergency stop command.",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "CollisionAvoidanceReq",
+      "qualified_name": "ShowcaseAGRFull::CollisionAvoidanceReq",
+      "kind": "definition",
+      "doc": "The robot shall maintain a minimum clearance of\n0.3 meters from all detected obstacles.",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "HumanDetectionReq",
+      "qualified_name": "ShowcaseAGRFull::HumanDetectionReq",
+      "kind": "definition",
+      "doc": "The robot shall detect human presence within\n5 meters and reduce speed to 0.5 m/s.",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "FailSafeReq",
+      "qualified_name": "ShowcaseAGRFull::FailSafeReq",
+      "kind": "definition",
+      "doc": "Upon loss of communication with the operator\nstation for more than 10 seconds, the robot\nshall execute autonomous stop.",
+      "constraint_count": 1,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "AutonomousGroundRobotRequirements",
+      "qualified_name": "ShowcaseAGRFull::AutonomousGroundRobotRequirements",
+      "kind": "definition",
+      "doc": "System-level requirements group. Binds the AGR as the\nsubject for all four top-level requirements, with per-requirement\nrationale preserved from the original satisfy docs.",
+      "constraint_count": 4,
+      "passed": true,
+      "fatal": false
+    },
+    {
+      "name": "obj",
+      "qualified_name": "ShowcaseAGRFull::PowerBudgetAnalysis::obj",
+      "kind": "usage",
+      "doc": "Compute expected endurance from battery capacity\nand total system power draw. Identify the highest\npower consumers and explore trade-offs.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "massBudget",
+      "qualified_name": "ShowcaseAGRFull::AutonomousGroundRobotRequirements::massBudget",
+      "kind": "usage",
+      "doc": "Total assembled mass is 12.5 kg, verified by component\nmass rollup: chassis 3.5 + drivetrain 1.2 + sensors 0.3\n+ compute 0.12 + battery 0.8 + structure 0.5 kg.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "enduranceMin",
+      "qualified_name": "ShowcaseAGRFull::AutonomousGroundRobotRequirements::enduranceMin",
+      "kind": "usage",
+      "doc": "4S LiPo at 10 Ah provides 5+ hours at 25 W compute\nplus 8.6 W sensor load, validated by PowerBudgetAnalysis.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "failSafeBehavior",
+      "qualified_name": "ShowcaseAGRFull::AutonomousGroundRobotRequirements::failSafeBehavior",
+      "kind": "usage",
+      "doc": "MissionCoordinator monitors heartbeat from BaseStation\nand commands autonomous stop after 10 s timeout.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "humanDetection",
+      "qualified_name": "ShowcaseAGRFull::AutonomousGroundRobotRequirements::humanDetection",
+      "kind": "usage",
+      "doc": "ObstacleDetector fuses LiDAR scan and camera image\nto classify humans at 5 m range, triggering speed\nreduction via CollisionGuard velocity limiting.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "OperationalSafety",
+      "qualified_name": "ShowcaseAGRFull::EmergencyStopReq::OperationalSafety",
+      "kind": "usage",
+      "doc": null,
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "OperationalSafety",
+      "qualified_name": "ShowcaseAGRFull::CollisionAvoidanceReq::OperationalSafety",
+      "kind": "usage",
+      "doc": null,
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "OperationalSafety",
+      "qualified_name": "ShowcaseAGRFull::HumanDetectionReq::OperationalSafety",
+      "kind": "usage",
+      "doc": null,
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "OperationalSafety",
+      "qualified_name": "ShowcaseAGRFull::FailSafeReq::OperationalSafety",
+      "kind": "usage",
+      "doc": null,
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": "robotRqts",
+      "qualified_name": "ShowcaseAGRFull::robotRqts",
+      "kind": "usage",
+      "doc": null,
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": null,
+      "qualified_name": "None",
+      "kind": "usage",
+      "doc": "RPLidar A3 provides 25 m range, fused with D435i depth\nfor 3D detection. Validated at 3+ meters in all directions.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": null,
+      "qualified_name": "None",
+      "kind": "usage",
+      "doc": "EKF fuses IMU at 200 Hz and LiDAR scan matching for\n5 cm RMS accuracy in mapped environments.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": null,
+      "qualified_name": "None",
+      "kind": "usage",
+      "doc": "max_linear_velocity parameter caps commanded velocity\nat 2.0 m/s; enforced at the controller output.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": null,
+      "qualified_name": "None",
+      "kind": "usage",
+      "doc": "Monitors /scan for imminent collision; commands zero\nvelocity within one control cycle (20 ms at 50 Hz).",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    },
+    {
+      "name": null,
+      "qualified_name": "None",
+      "kind": "usage",
+      "doc": "Maintains 0.3 m minimum clearance by scaling velocity\nproportionally to nearest obstacle distance.",
+      "constraint_count": 0,
+      "passed": null,
+      "fatal": false
+    }
+  ]
+}

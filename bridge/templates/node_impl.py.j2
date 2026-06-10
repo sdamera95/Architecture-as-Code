@@ -1,0 +1,38 @@
+"""{{ node.type_name }} — node implementation. EDIT ME.
+
+Generated ONCE by the ros2-sysmlv2 bridge pipeline and never overwritten
+(generation-gap pattern): this file is where demo/application logic lives.
+The architectural wiring (endpoints, parameters, lifecycle transitions) is in
+{{ module_name }}_base.py, which is regenerated on every pipeline run.
+"""
+import rclpy
+
+from .{{ module_name }}_base import {{ node.type_name }}Base
+
+
+class {{ node.type_name }}({{ node.type_name }}Base):
+    """{{ node.name }} application logic."""
+{% if not node.subscribers %}
+
+    # Override on_configure_hook / on_activate_hook / on_deactivate_hook here.
+{% endif %}
+{% for sub in node.subscribers %}
+
+    def handle_{{ sub.port_name }}(self, msg) -> None:
+        """{{ sub.topic_name }} ({{ sub.msg_class }}).
+
+        TODO: implement message processing logic.
+        """
+{% endfor %}
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = {{ node.type_name }}()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

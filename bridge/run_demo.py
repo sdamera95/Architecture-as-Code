@@ -33,11 +33,18 @@ def main():
                         help="Base output directory")
     parser.add_argument("--wired", action="store_true",
                         help="Fully-wired mode: seed all endpoints with default data for topology verification")
+    parser.add_argument("--lang", choices=["py", "cpp"], default="py",
+                        help="Target implementation language (default: py)")
+    parser.add_argument("--force", action="store_true",
+                        help="Wipe the output package first, discarding hand-written "
+                             "node implementations (generation-gap files)")
 
     args = parser.parse_args()
 
     json_path = Path(args.output_dir) / "architecture.json"
     suffix = "_wired" if args.wired else "_clean"
+    if args.lang != "py":
+        suffix += f"_{args.lang}"
     pkg_path = Path(args.output_dir) / f"{args.system.lower()}{suffix}"
 
     print("=" * 60)
@@ -51,7 +58,8 @@ def main():
 
     # Stage 2: Generate
     print(f"\n── Stage 2: ROS2 Package Generation{' (fully-wired)' if args.wired else ''} ──")
-    output = generate_package(arch, str(pkg_path), wired=args.wired)
+    output = generate_package(arch, str(pkg_path), wired=args.wired,
+                              lang=args.lang, force=args.force)
 
     # Summary
     print("\n" + "=" * 60)

@@ -19,7 +19,7 @@ import syside
 import sys
 from pathlib import Path
 
-MODEL_PATH = Path(__file__).parent.parent / "syside-demos" / "demo.sysml"
+MODEL_PATH = Path(__file__).parent.parent / "demos" / "uav" / "demo.sysml"
 
 # ── Helpers ────────────────────────────────────────────────────
 

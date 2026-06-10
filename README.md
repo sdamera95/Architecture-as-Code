@@ -13,7 +13,9 @@
 | [`projects/ros2-sysmlv2/`](projects/ros2-sysmlv2/) | The SysML v2 domain library: 17 packages, 179 definitions, packaged as a Sysand `.kpar` archive |
 | [`bridge/`](bridge/) | Python bridge pipeline (`extract_architecture.py`, `generate_ros2.py`, `run_demo.py`) using the Syside Automator SDK |
 | [`bridge/templates/`](bridge/templates/) | Jinja2 templates for the generated ROS2 package (lifecycle node, launch, params, conformance monitor) |
-| [`syside-demos/`](syside-demos/) | Example architecture models, including ab initio AGR (11 nodes, all 8 archetypes) and Nav2 hybrid (17 nodes) |
+| [`demos/`](demos/) | Demo architecture models: `agr/` (ab initio AGR, 11 nodes, all 8 archetypes), `agr-nav2/` (Nav2 hybrid, 17 nodes), `uav/` (reference models for trade studies and behavioral demos), `_shared/` (grid-view library) |
+| [`ros2-py-outputs/`](ros2-py-outputs/) | Committed generated `ament_python` packages, one per demo — pull onto a ROS2 Jazzy box and `colcon build` directly |
+| `ros2-cpp-outputs/` | Committed generated `ament_cmake` (C++) packages, one per demo (produced by the `--lang cpp` backend) |
 | [`tests/`](tests/) | Library and pipeline test suite |
 | [`tools/`](tools/) | Conformance checkers validating the library against ROS2 Jazzy source |
 | [`studies/`](studies/) | Case studies and supporting analyses |
@@ -74,15 +76,18 @@ The single-command driver wraps both pipeline stages:
 
 ```bash
 # Ab initio autonomous ground robot (11 nodes, all 8 archetypes)
-uv run python bridge/run_demo.py syside-demos/showcase_agr_full.sysml \
+uv run python bridge/run_demo.py demos/agr/showcase_agr_full.sysml \
     --system AutonomousGroundRobot --wired
 
 # Nav2 hybrid (5 custom + 12 Nav2 nodes)
-uv run python bridge/run_demo.py syside-demos/showcase_agr_nav2_full.sysml \
+uv run python bridge/run_demo.py demos/agr-nav2/showcase_agr_nav2_full.sysml \
     --system GroundRobotWithNav2 --wired
+
+# Or regenerate the committed demo packages (ros2-py-outputs/, ros2-cpp-outputs/) in one shot
+uv run python bridge/regen_demos.py
 ```
 
-Outputs land in `generated/<system_name>/`:
+`run_demo.py` outputs land in `generated/` (gitignored scratch space); `regen_demos.py` writes the committed packages under `ros2-py-outputs/<demo>/` and `ros2-cpp-outputs/<demo>/`. Package layout:
 
 ```text
 generated/<system_name>/
@@ -99,11 +104,16 @@ The `--wired` flag seeds every publisher with a timer emitting default-construct
 
 ### Build and deploy on ROS2 Jazzy
 
+The committed demo packages make this a pull-and-build workflow — the complete
+remote-box procedure (workspaces, Isaac Sim integration, conformance verification,
+where hand-written logic goes) is in [demos/RUNBOOK.md](demos/RUNBOOK.md):
+
 ```bash
 # In a Jazzy-sourced shell, on Ubuntu 24.04
-cp -r generated/<system_name> ~/ros2_ws/src/
+git clone https://github.com/sdamera95/Architecture-as-Code.git
+mkdir -p ~/ros2_ws/src && ln -s "$(pwd)/Architecture-as-Code/ros2-py-outputs" ~/ros2_ws/src/demos
 cd ~/ros2_ws
-colcon build --packages-select <system_name>
+colcon build
 source install/setup.bash
 
 # Launch the system
@@ -128,22 +138,22 @@ uv run python tools/run_all_conformance.py
 
 ## Validation summary
 
-End-to-end validation across 747 automated checks:
+End-to-end validation across 753 automated checks:
 
 | Component | Checks | Result |
 | --- | ---: | --- |
-| Message types (field-by-field vs. 85 `.msg` files) | 304 | pass |
+| Message types (field-by-field vs. 87 modeled `.msg` types; unmodeled messages skipped by design) | 310 | pass |
 | Communication (QoS enums, profiles, port/conn defs vs. `rclpy`) | 62 | pass |
 | Lifecycle (states/transitions vs. `lifecycle_msgs`) | 20 | pass |
 | TF2 and parameters (vs. `rcl_interfaces`) | 48 | pass |
 | Nav2 nodes (class inheritance, endpoints vs. C++ source) | 43 | pass |
 | Remaining message packages (vs. `common_interfaces`) | 23 | pass |
-| Library subtotal | **500** | pass |
+| Library subtotal | **506** | pass |
 | Library test suite (10 categories, 179 definitions) | 133 | pass |
 | End-user test (downstream model imports and specializes) | 15 | pass |
 | Bridge pipeline (extraction, generation, monitor) | 66 | pass |
 | ROS2 Jazzy deployment (showcase AGR: nodes, topics, connections, QoS) | 33 | pass |
-| **Total** | **747** | pass |
+| **Total** | **753** | pass |
 
 Both showcase architectures deploy on ROS2 Jazzy with **zero conformance violations**:
 
@@ -152,9 +162,10 @@ Both showcase architectures deploy on ROS2 Jazzy with **zero conformance violati
 
 ## Project status
 
-Pre-1.0 research code, actively developed. Current focus areas:
+Pre-1.0 research code, actively developed. The bridge generates both **`ament_python` (rclpy)** and **`ament_cmake` (rclcpp_lifecycle)** packages from the same language-agnostic `architecture.json` IR (`--lang {py,cpp}`), using a generation-gap pattern: `*_node_base.*` wiring is regenerated on every run, while the derived `*_node.*` implementation files are generated once and never overwritten, so hand-written logic survives model-driven regeneration. The conformance monitor, launch file, and parameter YAML are language-neutral and byte-identical across both packages.
 
-- **rclcpp (C++) backend** for the bridge pipeline (`rclpy`-only today; the `architecture.json` IR is language-agnostic by design)
+Current focus areas:
+
 - **Behavioral conformance**: extending the runtime monitor from structural checks to lifecycle transition sequences and `require constraint` predicate evaluation
 - **Analysis Model**: a differentiable analytical twin generated from the same `.sysml` source for gradient-based design-space exploration
 

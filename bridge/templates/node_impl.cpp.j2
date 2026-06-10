@@ -1,0 +1,34 @@
+// {{ node.type_name }} — node implementation. EDIT ME.
+//
+// Generated ONCE by the ros2-sysmlv2 bridge pipeline and never overwritten
+// (generation-gap pattern): this file is where demo/application logic lives.
+// The architectural wiring is in {{ module_name }}_base.hpp/.cpp, regenerated
+// on every pipeline run.
+#include "{{ pkg_name }}/{{ module_name }}_base.hpp"
+
+class {{ node.type_name }} : public {{ node.type_name }}Base
+{
+public:
+  using {{ node.type_name }}Base::{{ node.type_name }}Base;
+
+protected:
+{% if not node.subscribers %}
+  // Override on_configure_hook / on_activate_hook / on_deactivate_hook here.
+{% endif %}
+{% for sub in node.subscribers %}
+  void handle_{{ sub.port_name }}(const {{ sub.cpp_type }} & msg) override
+  {
+    // {{ sub.topic_name }} — TODO: implement message processing logic.
+    (void)msg;
+  }
+{% endfor %}
+};
+
+int main(int argc, char ** argv)
+{
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<{{ node.type_name }}>();
+  rclcpp::spin(node->get_node_base_interface());
+  rclcpp::shutdown();
+  return 0;
+}

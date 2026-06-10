@@ -14,6 +14,7 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,16 @@ import syside
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+
+def pipeline_timestamp() -> str:
+    """UTC ISO timestamp, honoring SOURCE_DATE_EPOCH for reproducible outputs
+    (regen_demos.py pins it to the source model's last git-commit time so
+    committed outputs don't churn on content-identical regenerations)."""
+    epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    if epoch:
+        return datetime.fromtimestamp(int(epoch), timezone.utc).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -630,7 +641,7 @@ def extract_architecture(user_files, system_name, library_dir, output_path):
         "metadata": {
             "model_name": system_name,
             "extracted_from": user_files,
-            "extraction_timestamp": datetime.now(timezone.utc).isoformat(),
+            "extraction_timestamp": pipeline_timestamp(),
             "library_version": "0.1.0-alpha",
         },
         "nodes": nodes,

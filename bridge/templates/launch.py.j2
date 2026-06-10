@@ -37,8 +37,15 @@ def generate_launch_description():
         default_value=os.path.join(pkg_dir, 'config', 'params.yaml'),
         description='Path to the parameter YAML file')
 
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    declare_sim_time_cmd = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use the /clock topic (set true when driven by a simulator)')
+
     ld = LaunchDescription()
     ld.add_action(declare_params_cmd)
+    ld.add_action(declare_sim_time_cmd)
 
     custom_lifecycle_nodes = []
 
@@ -51,7 +58,7 @@ def generate_launch_description():
         name='{{ node.name }}',
         namespace='{{ node.namespace }}',
         output='screen',
-        parameters=[params_file])
+        parameters=[params_file, {'use_sim_time': use_sim_time}])
     ld.add_action({{ node.instance_var }}_cmd)
     custom_lifecycle_nodes.append('{% if node.namespace == "/" %}/{{ node.name }}{% else %}{{ node.namespace }}/{{ node.name }}{% endif %}')
 {% endfor %}
@@ -73,6 +80,7 @@ def generate_launch_description():
                 {'autostart': True},
                 {'bond_timeout': 0.0},
                 {'node_names': custom_lifecycle_nodes},
+                {'use_sim_time': use_sim_time},
             ])
         ld.add_action(lifecycle_manager_cmd)
 
@@ -82,7 +90,8 @@ def generate_launch_description():
         package='{{ pkg_name }}',
         executable='conformance_monitor',
         name='conformance_monitor',
-        output='screen')
+        output='screen',
+        parameters=[params_file, {'use_sim_time': use_sim_time}])
     ld.add_action(conformance_monitor_cmd)
 
     return ld

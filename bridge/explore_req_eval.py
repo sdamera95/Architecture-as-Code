@@ -1,6 +1,6 @@
 """
 Stage C.1: explore the Syside 0.9.0 `compiler.evaluate(req, stdlib=..., experimental_quantities=True)`
-API surface against `syside-demos/uav_trade_study.sysml`.
+API surface against `demos/uav/uav_trade_study.sysml`.
 
 Goal: characterize what RequirementDefinitions vs RequirementUsages look like in the
 model, what the evaluation filter (`isinstance(req.owning_type, syside.Usage)`) admits
@@ -17,7 +17,7 @@ import pathlib
 
 import syside
 
-MODEL_PATH = pathlib.Path(__file__).resolve().parents[1] / "syside-demos" / "uav_trade_study.sysml"
+MODEL_PATH = pathlib.Path(__file__).resolve().parents[1] / "demos" / "uav" / "uav_trade_study.sysml"
 STDLIB = syside.Environment.get_default().lib
 
 

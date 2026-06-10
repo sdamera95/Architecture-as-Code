@@ -300,7 +300,7 @@ def _wrap_page(param_html: str, grad_html: str) -> str:
   Produced by <code>treescope.render_to_html(robot)</code> on the GroundRobotWithNav2
   Equinox module instance defined in <code>tests/render_pytree_treescope.py</code>.
   The module hierarchy mirrors the part-def hierarchy of
-  <code>syside-demos/showcase_agr_nav2_full.sysml</code>.
+  <code>demos/agr-nav2/showcase_agr_nav2_full.sysml</code>.
   This is what a researcher reproducing the work sees in a Jupyter notebook -
   interactive, collapsible, with type badges and values surfaced directly from JAX.
 </p>

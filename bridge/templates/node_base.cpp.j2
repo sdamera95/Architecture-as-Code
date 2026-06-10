@@ -1,0 +1,105 @@
+// {{ node.type_name }}Base — auto-generated from SysML v2 model. DO NOT EDIT.
+// Regenerated on every pipeline run; demo logic belongs in {{ module_name }}.cpp.
+#include "{{ pkg_name }}/{{ module_name }}_base.hpp"
+
+#include <chrono>
+#include <functional>
+
+{{ node.type_name }}Base::{{ node.type_name }}Base(const rclcpp::NodeOptions & options)
+: rclcpp_lifecycle::LifecycleNode("{{ node.name }}", options)
+{
+  RCLCPP_INFO(get_logger(), "{{ node.type_name }} created (unconfigured)");
+}
+
+{{ node.type_name }}Base::CallbackReturn
+{{ node.type_name }}Base::on_configure(const rclcpp_lifecycle::State & /*state*/)
+{
+  RCLCPP_INFO(get_logger(), "Configuring...");
+{% for pub in node.publishers %}
+
+  // Publisher: {{ pub.port_name }} → {{ pub.topic_name }}
+  {{ pub.port_name }}_ = create_publisher<{{ pub.cpp_type }}>(
+    "{{ pub.topic_name }}", {{ pub.cpp_qos_arg }});
+{% endfor %}
+{% for sub in node.subscribers %}
+
+  // Subscriber: {{ sub.port_name }} ← {{ sub.topic_name }}
+  {{ sub.port_name }}_ = create_subscription<{{ sub.cpp_type }}>(
+    "{{ sub.topic_name }}", {{ sub.cpp_qos_arg }},
+    std::bind(&{{ node.type_name }}Base::{{ sub.port_name }}_callback, this,
+              std::placeholders::_1));
+{% endfor %}
+{% for param in node.parameters %}
+
+  // Parameter: {{ param.name }}
+  declare_parameter("{{ param.name }}", {{ param.cpp_default }});
+{% endfor %}
+
+  on_configure_hook();
+  return CallbackReturn::SUCCESS;
+}
+
+{{ node.type_name }}Base::CallbackReturn
+{{ node.type_name }}Base::on_activate(const rclcpp_lifecycle::State & state)
+{
+  RCLCPP_INFO(get_logger(), "Activating...");
+{% if wired and node.publishers %}
+
+  // ── Fully-wired mode: publish default messages for topology verification ──
+{% for pub in node.publishers %}
+  {{ pub.port_name }}_timer_ = create_wall_timer(
+    std::chrono::milliseconds({{ pub.wired_period_ms }}),
+    std::bind(&{{ node.type_name }}Base::{{ pub.port_name }}_wired_publish, this));
+{% endfor %}
+{% endif %}
+  on_activate_hook();
+  return rclcpp_lifecycle::LifecycleNode::on_activate(state);
+}
+
+{{ node.type_name }}Base::CallbackReturn
+{{ node.type_name }}Base::on_deactivate(const rclcpp_lifecycle::State & state)
+{
+  RCLCPP_INFO(get_logger(), "Deactivating...");
+{% if wired and node.publishers %}
+{% for pub in node.publishers %}
+  {{ pub.port_name }}_timer_->cancel();
+{% endfor %}
+{% endif %}
+  on_deactivate_hook();
+  return rclcpp_lifecycle::LifecycleNode::on_deactivate(state);
+}
+
+{{ node.type_name }}Base::CallbackReturn
+{{ node.type_name }}Base::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+{
+  RCLCPP_INFO(get_logger(), "Cleaning up...");
+  return CallbackReturn::SUCCESS;
+}
+
+{{ node.type_name }}Base::CallbackReturn
+{{ node.type_name }}Base::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
+{
+  RCLCPP_INFO(get_logger(), "Shutting down...");
+  return CallbackReturn::SUCCESS;
+}
+{% for sub in node.subscribers %}
+
+void {{ node.type_name }}Base::{{ sub.port_name }}_callback(const {{ sub.cpp_type }} & msg)
+{
+{% if wired %}
+  RCLCPP_DEBUG(get_logger(), "[wired] Received on {{ sub.topic_name }}");
+{% endif %}
+  handle_{{ sub.port_name }}(msg);
+}
+{% endfor %}
+{% if wired %}
+{% for pub in node.publishers %}
+
+void {{ node.type_name }}Base::{{ pub.port_name }}_wired_publish()
+{
+  // Wired-mode publisher for {{ pub.topic_name }} — emits default {{ pub.cpp_type }}.
+  {{ pub.cpp_type }} msg;
+  {{ pub.port_name }}_->publish(msg);
+}
+{% endfor %}
+{% endif %}

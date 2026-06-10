@@ -6,7 +6,7 @@ Demonstrates the core insight from the Architecture-Driven Differentiable
 Twins report: SysML v2 part hierarchy maps to Equinox module composition,
 and jax.grad produces gradients with the same architecture as the system.
 
-The UAV model here mirrors the structure of syside-demos/uav_trade_study.sysml:
+The UAV model here mirrors the structure of demos/uav/uav_trade_study.sysml:
   - Battery (capacity, specific_energy -> derived mass)
   - PropulsionSubsystem (num_motors, motor_mass -> derived mass, hover power)
   - AvionicsSubsystem (fcc, imu, gps, baro -> total power)

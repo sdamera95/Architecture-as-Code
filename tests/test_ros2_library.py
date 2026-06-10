@@ -74,8 +74,10 @@ print(f"  {len(FILES)} files loaded successfully")
 section("2. Definition counts")
 
 EXPECTED_COUNTS = {
-    "ItemDefinition": 110,
-    "AttributeDefinition": 10,
+    # Time and Duration moved attribute def -> item def in the 2026-06 discipline
+    # sweep (structured builtin_interfaces messages, not value types): 110+2 / 10-2.
+    "ItemDefinition": 112,
+    "AttributeDefinition": 8,
     "EnumerationDefinition": 10,
     "PartDefinition": 30,
     "PortDefinition": 6,

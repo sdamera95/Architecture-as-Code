@@ -24,7 +24,7 @@ from pathlib import Path
 from dataclasses import field as dataclass_field
 from typing import Any
 
-MODEL_PATH = Path(__file__).parent.parent / "syside-demos" / "uav_trade_study.sysml"
+MODEL_PATH = Path(__file__).parent.parent / "demos" / "uav" / "uav_trade_study.sysml"
 
 
 # ══════════════════════════════════════════════════════════════

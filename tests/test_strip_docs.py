@@ -22,8 +22,8 @@ from strip_docs import DOC_BLOCK, strip_docs
 
 REPO = Path(__file__).parent.parent
 CANONICAL_FILES = [
-    REPO / "syside-demos" / "showcase_agr_full.sysml",
-    REPO / "syside-demos" / "showcase_agr_nav2_full.sysml",
+    REPO / "demos" / "agr" / "showcase_agr_full.sysml",
+    REPO / "demos" / "agr-nav2" / "showcase_agr_nav2_full.sysml",
 ]
 
 STRUCTURAL_KEYWORDS = [

@@ -16,6 +16,8 @@ subscriptions required):
 
 Publishes diagnostic_msgs/DiagnosticArray on /conformance_report.
 """
+from fnmatch import fnmatch
+
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSReliabilityPolicy, QoSDurabilityPolicy
@@ -105,6 +107,10 @@ class ConformanceMonitor(Node):
 
     def __init__(self):
         super().__init__(node_name='conformance_monitor')
+        # fnmatch patterns for out-of-model nodes to ignore (e.g. simulator
+        # bridges, rviz, rqt). Out-of-model nodes are reported at WARN, never
+        # ERROR: the monitor detects drift, it does not forbid coexistence.
+        self.declare_parameter('ignored_node_patterns', [''])
         self.diag_pub = self.create_publisher(
             DiagnosticArray, '/conformance_report', 10)
         self.timer = self.create_timer(CHECK_INTERVAL_SEC, self._check_conformance)
@@ -127,9 +133,18 @@ class ConformanceMonitor(Node):
         node_status.name = 'node_presence'
 
         missing = EXPECTED_NODES - discovered
-        # Exclude the monitor itself from unexpected detection
-        unexpected = discovered - EXPECTED_NODES - {
-            ('conformance_monitor', '/'),
+        # Out-of-model nodes: everything discovered but not modeled, minus the
+        # monitor itself and anything matching the ignored_node_patterns
+        # parameter (simulator bridges, rviz, rqt, ...).
+        patterns = [p for p in self.get_parameter('ignored_node_patterns').value if p]
+
+        def full_name(name, ns):
+            return f'/{name}' if ns == '/' else f'{ns}/{name}'
+
+        unexpected = {
+            (name, ns) for (name, ns) in discovered - EXPECTED_NODES
+            if (name, ns) != ('conformance_monitor', '/')
+            and not any(fnmatch(full_name(name, ns), pat) for pat in patterns)
         }
 
         if not missing:
@@ -140,7 +155,14 @@ class ConformanceMonitor(Node):
             node_status.message = f'{len(missing)} nodes missing'
             for name, ns in sorted(missing):
                 node_status.values.append(
-                    KeyValue(key='missing', value=f'{ns}/{name}'))
+                    KeyValue(key='missing', value=full_name(name, ns)))
+        if unexpected:
+            if node_status.level == DiagnosticStatus.OK:
+                node_status.level = DiagnosticStatus.WARN
+            node_status.message += f'; {len(unexpected)} out-of-model node(s)'
+            for name, ns in sorted(unexpected):
+                node_status.values.append(
+                    KeyValue(key='out_of_model', value=full_name(name, ns)))
 
         diag_array.status.append(node_status)
 

@@ -1,6 +1,6 @@
 # AGR Pillar Views — Inventory for Manuscript Mosaic
 
-**Source model:** [`syside-demos/showcase_agr_full.sysml`](../../syside-demos/showcase_agr_full.sysml) (the ab initio AGR — Tier 1 per `idempotent-dancing-axolotl.md`)
+**Source model:** [`demos/agr/showcase_agr_full.sysml`](../../demos/agr/showcase_agr_full.sysml) (the ab initio AGR — Tier 1 per `idempotent-dancing-axolotl.md`)
 
 **Scope:** All views below render REAL AGR architectural elements. No invented content.
 

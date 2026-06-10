@@ -26,7 +26,7 @@ import tempfile
 import os
 from pathlib import Path
 
-MODEL_TEMPLATE = Path(__file__).parent.parent / "syside-demos" / "uav_trade_study.sysml"
+MODEL_TEMPLATE = Path(__file__).parent.parent / "demos" / "uav" / "uav_trade_study.sysml"
 
 
 def load_and_evaluate(model_path: str) -> dict:
